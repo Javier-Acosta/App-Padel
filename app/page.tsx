@@ -79,12 +79,10 @@ export default async function Home() {
                 Reserva online
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                Turnos de padel confirmados con sena por MercadoPago.
+               Catamarca Turnos y Torneos de Pádel - by Priscila Vega.
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-[#dbe8df]">
-                AppPadel centraliza la agenda del club, evita cruces de horarios
-                y prepara el flujo para reservar canchas con usuarios
-                registrados.
+                AppPadel centraliza para organizar turnos de padel entre Amigos.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
