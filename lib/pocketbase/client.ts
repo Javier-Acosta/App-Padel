@@ -22,6 +22,17 @@ type PocketBaseRequestOptions = {
   cache?: RequestCache;
 };
 
+export class PocketBaseRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly responseText: string,
+  ) {
+    super(message);
+    this.name = "PocketBaseRequestError";
+  }
+}
+
 function buildPocketBaseUrl(
   path: string,
   searchParams?: PocketBaseRequestOptions["searchParams"],
@@ -54,8 +65,10 @@ export async function pocketBaseRequest<T>(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `PocketBase request failed (${response.status}): ${errorText}`,
+    throw new PocketBaseRequestError(
+      `PocketBase request failed (${response.status}).`,
+      response.status,
+      errorText,
     );
   }
 
@@ -64,15 +77,30 @@ export async function pocketBaseRequest<T>(
 
 export async function authenticatePocketBaseAdmin() {
   const { POCKETBASE_ADMIN_EMAIL, POCKETBASE_ADMIN_PASSWORD } = getServerEnv();
+  const body = {
+    identity: POCKETBASE_ADMIN_EMAIL,
+    password: POCKETBASE_ADMIN_PASSWORD,
+  };
+
+  try {
+    return await pocketBaseRequest<PocketBaseAuthResponse>(
+      "/api/collections/_superusers/auth-with-password",
+      {
+        method: "POST",
+        body,
+      },
+    );
+  } catch (error) {
+    if (!(error instanceof PocketBaseRequestError) || error.status !== 404) {
+      throw error;
+    }
+  }
 
   return pocketBaseRequest<PocketBaseAuthResponse>(
     "/api/admins/auth-with-password",
     {
       method: "POST",
-      body: {
-        identity: POCKETBASE_ADMIN_EMAIL,
-        password: POCKETBASE_ADMIN_PASSWORD,
-      },
+      body,
     },
   );
 }

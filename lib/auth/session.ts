@@ -4,6 +4,7 @@ import type { UserRole } from "@/lib/domain/reservations";
 import {
   authenticatePocketBaseUser,
   createPocketBaseRecord,
+  PocketBaseRequestError,
   refreshPocketBaseUserAuth,
 } from "@/lib/pocketbase/client";
 
@@ -37,6 +38,13 @@ type LoginInput = {
   password: string;
 };
 
+export class AuthInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AuthInputError";
+  }
+}
+
 function sanitizeUser(record: PocketBaseUserRecord): AuthUser {
   return {
     id: record.id,
@@ -49,13 +57,17 @@ function sanitizeUser(record: PocketBaseUserRecord): AuthUser {
 
 function assertNonEmptyString(value: unknown, field: string) {
   if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`${field} is required.`);
+    throw new AuthInputError(`${field} is required.`);
   }
 
   return value.trim();
 }
 
 export function parseRegisterInput(input: unknown): RegisterInput {
+  if (!input || typeof input !== "object") {
+    throw new AuthInputError("Invalid registration data.");
+  }
+
   const payload = input as Record<string, unknown>;
   const name = assertNonEmptyString(payload.name, "name");
   const email = assertNonEmptyString(payload.email, "email").toLowerCase();
@@ -63,7 +75,7 @@ export function parseRegisterInput(input: unknown): RegisterInput {
   const password = assertNonEmptyString(payload.password, "password");
 
   if (password.length < 8) {
-    throw new Error("password must be at least 8 characters.");
+    throw new AuthInputError("password must be at least 8 characters.");
   }
 
   return {
@@ -75,6 +87,10 @@ export function parseRegisterInput(input: unknown): RegisterInput {
 }
 
 export function parseLoginInput(input: unknown): LoginInput {
+  if (!input || typeof input !== "object") {
+    throw new AuthInputError("Invalid login data.");
+  }
+
   const payload = input as Record<string, unknown>;
 
   return {
@@ -106,15 +122,23 @@ export async function getAuthToken() {
 }
 
 export async function registerUser(input: RegisterInput) {
-  await createPocketBaseRecord<PocketBaseUserRecord>("users", {
-    name: input.name,
-    email: input.email,
-    emailVisibility: true,
-    phone: input.phone,
-    role: "user",
-    password: input.password,
-    passwordConfirm: input.password,
-  });
+  try {
+    await createPocketBaseRecord<PocketBaseUserRecord>("users", {
+      name: input.name,
+      email: input.email,
+      emailVisibility: true,
+      phone: input.phone,
+      role: "user",
+      password: input.password,
+      passwordConfirm: input.password,
+    });
+  } catch (error) {
+    if (error instanceof PocketBaseRequestError && error.status === 400) {
+      throw new AuthInputError("No pudimos crear la cuenta con esos datos.");
+    }
+
+    throw error;
+  }
 
   return loginUser({
     email: input.email,
@@ -142,12 +166,8 @@ export async function getCurrentUser() {
 
   try {
     const auth = await refreshPocketBaseUserAuth<PocketBaseUserRecord>(token);
-
-    await setAuthCookie(auth.token);
-
     return sanitizeUser(auth.record);
   } catch {
-    await clearAuthCookie();
     return null;
   }
 }
