@@ -9,7 +9,7 @@ import {
   getActiveCourts,
   getClubSettings,
   getCourtBlocksForRange,
-  getReservationsForRange,
+  getReservationsForDate,
 } from "@/lib/padel/data";
 import { getAuthToken, getCurrentUser } from "@/lib/auth/session";
 
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const [courts, settings, reservations, blocks] = await Promise.all([
       getActiveCourts(token),
       getClubSettings(token),
-      getReservationsForRange(token, range.startsAt, range.endsAt),
+      getReservationsForDate(token, date, range.startsAt, range.endsAt),
       getCourtBlocksForRange(token, range.startsAt, range.endsAt),
     ]);
 

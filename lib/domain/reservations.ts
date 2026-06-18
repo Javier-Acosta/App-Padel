@@ -1,6 +1,8 @@
-export const TURN_DURATIONS = [60, 90, 120] as const;
+export const MIN_TURN_DURATION_MINUTES = 60;
+export const MAX_TURN_DURATION_MINUTES = 15 * 60;
+export const TURN_DURATION_STEP_MINUTES = 60;
 
-export type TurnDuration = (typeof TURN_DURATIONS)[number];
+export type TurnDuration = number;
 
 export const RESERVATION_STATUSES = [
   "pending_payment",
@@ -83,6 +85,7 @@ export type Reservation = {
   id: string;
   userId: string;
   courtId: string;
+  reservationDate: string;
   startsAt: string;
   endsAt: string;
   durationMinutes: TurnDuration;
@@ -118,12 +121,17 @@ export type Payment = {
 };
 
 export function isTurnDuration(value: number): value is TurnDuration {
-  return TURN_DURATIONS.includes(value as TurnDuration);
+  return (
+    Number.isInteger(value) &&
+    value >= MIN_TURN_DURATION_MINUTES &&
+    value <= MAX_TURN_DURATION_MINUTES &&
+    value % TURN_DURATION_STEP_MINUTES === 0
+  );
 }
 
 export function assertTurnDuration(value: number): TurnDuration {
   if (!isTurnDuration(value)) {
-    throw new Error("Turn duration must be 60, 90, or 120 minutes.");
+    throw new Error("Turn duration must be between 1 and 15 full hours.");
   }
 
   return value;
@@ -137,17 +145,15 @@ export function isReservationStatus(
 
 export function isActiveBlockingReservation(
   reservation: Pick<Reservation, "status" | "expiresAt">,
-  now = new Date(),
 ) {
-  if (reservation.status === "confirmed") {
+  if (
+    reservation.status === "confirmed" ||
+    reservation.status === "pending_payment"
+  ) {
     return true;
   }
 
-  if (reservation.status !== "pending_payment" || !reservation.expiresAt) {
-    return false;
-  }
-
-  return new Date(reservation.expiresAt).getTime() > now.getTime();
+  return false;
 }
 
 export function canUserCancelReservation(

@@ -50,7 +50,6 @@ export function calculateAvailability({
   settings,
   reservations,
   blocks,
-  now = new Date(),
 }: {
   date: string;
   durationMinutes: number;
@@ -58,7 +57,6 @@ export function calculateAvailability({
   settings: ClubSettings;
   reservations: Reservation[];
   blocks: CourtBlock[];
-  now?: Date;
 }) {
   const duration = assertTurnDuration(durationMinutes);
   const dayKey = dayKeys[toDateTime(date, "12:00").getDay()];
@@ -69,7 +67,7 @@ export function calculateAvailability({
   }
 
   const activeReservations = reservations.filter((reservation) =>
-    isActiveBlockingReservation(reservation, now),
+    isActiveBlockingReservation(reservation),
   );
 
   const slots: AvailabilitySlot[] = [];

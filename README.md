@@ -36,6 +36,31 @@ If PocketBase runs on the same production server as Next.js, `POCKETBASE_URL`
 can usually stay as `http://127.0.0.1:8090`. If PocketBase runs on another host,
 use that server URL instead.
 
+## Club hours and logo
+
+Superusers can manage the club schedule from the PocketBase admin panel:
+
+1. Open the `club_settings` collection.
+2. Edit the `default` record.
+3. Update `openingHours` to control available reservation hours.
+4. Upload the club logo in the `logo` field.
+
+Default hours are 8:00 to 23:00 every day:
+
+```json
+{
+  "monday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
+  "tuesday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
+  "wednesday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
+  "thursday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
+  "friday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
+  "saturday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
+  "sunday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] }
+}
+```
+
+To close a day, use `{ "closed": true, "ranges": [] }` for that day.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

@@ -105,9 +105,9 @@ export default async function Home() {
 
           <div className="mb-4 grid gap-3 text-sm text-[#dbe8df] sm:grid-cols-3">
             {[
-              ["Duraciones", "60, 90 y 120 minutos"],
+              ["Duraciones", "De 1 a 15 horas"],
               ["Pago", "Sena online"],
-              ["Agenda", "Disponibilidad por cancha"],
+              ["Horario", "8:00 a 23:00"],
             ].map(([title, value]) => (
               <div
                 key={title}

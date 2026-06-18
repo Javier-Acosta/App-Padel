@@ -46,6 +46,10 @@ const requiredEnv = [
   "POCKETBASE_ADMIN_PASSWORD",
 ];
 
+const reservationDurationValues = Array.from({ length: 15 }, (_, index) =>
+  String((index + 1) * 60),
+);
+
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 
 if (missingEnv.length > 0) {
@@ -198,12 +202,37 @@ function relationField(name, collectionId, options = {}) {
 }
 
 function mergeByName(existingFields, requiredFields) {
-  const existingNames = new Set(existingFields.map((field) => field.name));
-  const missing = requiredFields.filter((field) => !existingNames.has(field.name));
+  const existingByName = new Map(
+    existingFields.map((field) => [field.name, field]),
+  );
+  const requiredByName = new Map(
+    requiredFields.map((field) => [field.name, field]),
+  );
+  const missing = requiredFields.filter((field) => !existingByName.has(field.name));
+  const changed = [];
+  const fields = existingFields.map((existingField) => {
+    const requiredField = requiredByName.get(existingField.name);
+
+    if (!requiredField || existingField.type !== requiredField.type) {
+      return existingField;
+    }
+
+    const mergedField = {
+      ...existingField,
+      ...requiredField,
+    };
+
+    if (JSON.stringify(mergedField) !== JSON.stringify(existingField)) {
+      changed.push(mergedField);
+    }
+
+    return mergedField;
+  });
 
   return {
-    fields: [...existingFields, ...missing],
+    fields: [...fields, ...missing],
     missing,
+    changed,
   };
 }
 
@@ -245,7 +274,11 @@ async function upsertCollection(token, definition) {
   const mergedFields = mergeByName(existing.fields ?? [], definition.fields ?? []);
   const mergedIndexes = mergeIndexes(existing.indexes ?? [], definition.indexes ?? []);
 
-  if (mergedFields.missing.length === 0 && mergedIndexes.missing.length === 0) {
+  if (
+    mergedFields.missing.length === 0 &&
+    mergedFields.changed.length === 0 &&
+    mergedIndexes.missing.length === 0
+  ) {
     console.log(`ok ${definition.name}`);
     return existing;
   }
@@ -261,9 +294,12 @@ async function upsertCollection(token, definition) {
   });
 
   const fieldNames = mergedFields.missing.map((field) => field.name).join(", ");
+  const changedFieldNames = mergedFields.changed
+    .map((field) => field.name)
+    .join(", ");
   const indexCount = mergedIndexes.missing.length;
   console.log(
-    `updated ${definition.name}${fieldNames ? ` fields=[${fieldNames}]` : ""}${indexCount ? ` indexes=${indexCount}` : ""}`,
+    `updated ${definition.name}${fieldNames ? ` fields=[${fieldNames}]` : ""}${changedFieldNames ? ` changed=[${changedFieldNames}]` : ""}${indexCount ? ` indexes=${indexCount}` : ""}`,
   );
 
   return getCollection(token, definition.name);
@@ -382,9 +418,12 @@ function buildDefinitions(ids = {}) {
       fields: [
         relationField("userId", ids.users, { required: true }),
         relationField("courtId", ids.courts, { required: true }),
+        textField("reservationDate", { max: 10 }),
         dateField("startsAt", { required: true }),
         dateField("endsAt", { required: true }),
-        selectField("durationMinutes", ["60", "90", "120"], { required: true }),
+        selectField("durationMinutes", reservationDurationValues, {
+          required: true,
+        }),
         selectField(
           "status",
           [

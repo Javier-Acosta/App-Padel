@@ -12,8 +12,16 @@ import {
   getActiveCourts,
   getClubSettings,
   getCourtBlocksForRange,
-  getReservationsForRange,
+  getReservationsForDate,
 } from "@/lib/padel/data";
+
+function parseReservationDate(value: unknown) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error("date must use YYYY-MM-DD format.");
+  }
+
+  return value;
+}
 
 function parseCreateReservationInput(input: unknown) {
   const payload = input as Record<string, unknown>;
@@ -31,6 +39,7 @@ function parseCreateReservationInput(input: unknown) {
 
   return {
     courtId: payload.courtId,
+    date: parseReservationDate(payload.date),
     startsAt: payload.startsAt,
     durationMinutes: assertTurnDuration(Number(payload.durationMinutes)),
   };
@@ -49,12 +58,12 @@ export async function POST(request: Request) {
     const endsAt = new Date(
       startsAt.getTime() + input.durationMinutes * 60 * 1000,
     );
-    const date = input.startsAt.slice(0, 10);
+    const date = input.date;
     const range = getDateRange(date);
     const [courts, settings, reservations, blocks] = await Promise.all([
       getActiveCourts(token),
       getClubSettings(token),
-      getReservationsForRange(token, range.startsAt, range.endsAt),
+      getReservationsForDate(token, date, range.startsAt, range.endsAt),
       getCourtBlocksForRange(token, range.startsAt, range.endsAt),
     ]);
 
@@ -89,10 +98,11 @@ export async function POST(request: Request) {
     const reservation = await createPendingReservation(token, {
       userId: user.id,
       courtId: input.courtId,
+      reservationDate: date,
       startsAt: startsAt.toISOString(),
       endsAt: endsAt.toISOString(),
       durationMinutes: input.durationMinutes,
-      totalPrice: settings.basePrice,
+      totalPrice: settings.basePrice * (input.durationMinutes / 60),
       depositAmount: settings.depositAmount,
       expiresAt: new Date(
         Date.now() + settings.paymentHoldMinutes * 60 * 1000,

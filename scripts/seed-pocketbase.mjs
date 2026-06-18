@@ -8,17 +8,29 @@ const envPath = path.join(repoRoot, ".env.local");
 
 const defaultCourts = ["Cancha 1", "Cancha 2", "Cancha 3"];
 
+const defaultOpeningHours = {
+  monday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  tuesday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  wednesday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  thursday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  friday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  saturday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  sunday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+};
+
+const previousDefaultOpeningHours = {
+  monday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  tuesday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  wednesday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  thursday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  friday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
+  saturday: { ranges: [{ startsAt: "09:00", endsAt: "22:00" }] },
+  sunday: { ranges: [{ startsAt: "09:00", endsAt: "22:00" }] },
+};
+
 const defaultSettings = {
   key: "default",
-  openingHours: {
-    monday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
-    tuesday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
-    wednesday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
-    thursday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
-    friday: { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
-    saturday: { ranges: [{ startsAt: "09:00", endsAt: "22:00" }] },
-    sunday: { ranges: [{ startsAt: "09:00", endsAt: "22:00" }] },
-  },
+  openingHours: defaultOpeningHours,
   basePrice: 12000,
   depositAmount: 3000,
   paymentHoldMinutes: 10,
@@ -140,6 +152,21 @@ function escapeFilterValue(value) {
   return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');
 }
 
+function stableStringify(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value)
+      .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+      .map(([key, nestedValue]) => `${JSON.stringify(key)}:${stableStringify(nestedValue)}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+}
+
 async function findFirstRecord(token, collection, filter) {
   const result = await request(`/api/collections/${collection}/records`, {
     token,
@@ -202,6 +229,17 @@ async function upsertClubSettings(token) {
   );
 
   if (existing) {
+    if (
+      stableStringify(existing.openingHours) ===
+      stableStringify(previousDefaultOpeningHours)
+    ) {
+      await updateRecord(token, "club_settings", existing.id, {
+        openingHours: defaultOpeningHours,
+      });
+      console.log("updated club_settings default opening hours");
+      return;
+    }
+
     console.log("ok club_settings default");
     return;
   }

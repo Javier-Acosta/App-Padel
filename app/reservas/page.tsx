@@ -34,16 +34,16 @@ export default async function ReservationsPage() {
           </p>
           <h1 className="mt-3 text-3xl font-semibold">Hola, {user.name}</h1>
           <p className="mt-3 max-w-2xl text-[#526158]">
-            Elegi una fecha, una duracion y revisa las canchas activas del
-            club. En el proximo paso conectamos los horarios disponibles.
+            Elegi una fecha, cuantas horas queres jugar y revisa las canchas
+            disponibles del club.
           </p>
         </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           {[
-            ["Duraciones", "60, 90 y 120 minutos"],
+            ["Duraciones", "De 1 a 15 horas"],
             ["Pago", `Sena online de $${settings?.depositAmount ?? 0}`],
-            ["Cancelacion", "Permitida hasta 3 horas antes"],
+            ["Horario", "Todos los dias de 8:00 a 23:00"],
           ].map(([title, value]) => (
             <div
               key={title}

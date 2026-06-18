@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  TURN_DURATIONS,
+  MAX_TURN_DURATION_MINUTES,
   type ClubSettings,
   type Court,
 } from "@/lib/domain/reservations";
@@ -20,6 +20,15 @@ type AvailabilitySlot = {
   endsAt: string;
 };
 
+type SelectedRange = {
+  courtId: string;
+  courtName: string;
+  startsAt: string;
+  endsAt?: string;
+};
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -32,11 +41,73 @@ function getTodayValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function doSlotsOverlap(
+  first: Pick<AvailabilitySlot, "startsAt" | "endsAt">,
+  second: Pick<AvailabilitySlot, "startsAt" | "endsAt">,
+) {
+  return (
+    new Date(first.startsAt).getTime() < new Date(second.endsAt).getTime() &&
+    new Date(second.startsAt).getTime() < new Date(first.endsAt).getTime()
+  );
+}
+
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function isFullHour(value: string) {
+  return new Date(value).getMinutes() === 0;
+}
+
+function getTimeButtons(slots: AvailabilitySlot[]) {
+  const times = new Set<string>();
+
+  for (const slot of slots) {
+    if (isFullHour(slot.startsAt)) {
+      times.add(slot.startsAt);
+      times.add(slot.endsAt);
+    }
+  }
+
+  return Array.from(times).sort(
+    (left, right) => new Date(left).getTime() - new Date(right).getTime(),
+  );
+}
+
+function isRangeAvailable(
+  slots: AvailabilitySlot[],
+  startsAt: string,
+  endsAt: string,
+) {
+  const startMs = new Date(startsAt).getTime();
+  const endMs = new Date(endsAt).getTime();
+
+  if (endMs <= startMs || endMs - startMs > MAX_TURN_DURATION_MINUTES * 60 * 1000) {
+    return false;
+  }
+
+  for (let cursor = startMs; cursor < endMs; cursor += ONE_HOUR_MS) {
+    const hasSlot = slots.some(
+      (slot) =>
+        new Date(slot.startsAt).getTime() === cursor &&
+        new Date(slot.endsAt).getTime() === cursor + ONE_HOUR_MS,
+    );
+
+    if (!hasSlot) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function ReservationPicker({ courts, settings }: ReservationPickerProps) {
   const [date, setDate] = useState(getTodayValue);
-  const [duration, setDuration] = useState<(typeof TURN_DURATIONS)[number]>(90);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(
+  const [selectedRange, setSelectedRange] = useState<SelectedRange | null>(
     null,
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -67,13 +138,13 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
     async function loadAvailability() {
       setIsLoading(true);
       setError(null);
-      setSelectedSlot(null);
+      setSelectedRange(null);
       setReservationNotice(null);
 
       try {
         const params = new URLSearchParams({
           date,
-          duration: String(duration),
+          duration: "60",
         });
         const response = await fetch(`/api/availability?${params}`, {
           signal: controller.signal,
@@ -105,10 +176,101 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
     loadAvailability();
 
     return () => controller.abort();
-  }, [date, duration]);
+  }, [date]);
+
+  const durationMinutes = selectedRange?.endsAt
+    ? (new Date(selectedRange.endsAt).getTime() -
+        new Date(selectedRange.startsAt).getTime()) /
+      (60 * 1000)
+    : 0;
+  const selectedHours = durationMinutes / 60;
+  const estimatedPrice = (settings?.basePrice ?? 0) * selectedHours;
+
+  function selectTime(
+    court: Court,
+    courtSlots: AvailabilitySlot[],
+    time: string,
+  ) {
+    setError(null);
+    setReservationNotice(null);
+
+    if (
+      !selectedRange ||
+      selectedRange.courtId !== court.id
+    ) {
+      setSelectedRange({
+        courtId: court.id,
+        courtName: court.name,
+        startsAt: time,
+      });
+      return;
+    }
+
+    if (selectedRange.endsAt) {
+      const startMs = new Date(selectedRange.startsAt).getTime();
+      const clickedMs = new Date(time).getTime();
+
+      if (clickedMs === startMs) {
+        setSelectedRange({
+          courtId: court.id,
+          courtName: court.name,
+          startsAt: time,
+        });
+        return;
+      }
+
+      const startsAt = clickedMs < startMs ? time : selectedRange.startsAt;
+      const endsAt = clickedMs < startMs ? selectedRange.startsAt : time;
+
+      if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
+        setError("Elegí un rango de horas consecutivas disponibles.");
+        setSelectedRange({
+          courtId: court.id,
+          courtName: court.name,
+          startsAt: time,
+        });
+        return;
+      }
+
+      setSelectedRange({
+        courtId: court.id,
+        courtName: court.name,
+        startsAt,
+        endsAt,
+      });
+      return;
+    }
+
+    if (selectedRange.startsAt === time) {
+      setSelectedRange(null);
+      return;
+    }
+
+    const startMs = new Date(selectedRange.startsAt).getTime();
+    const clickedMs = new Date(time).getTime();
+    const startsAt = clickedMs < startMs ? time : selectedRange.startsAt;
+    const endsAt = clickedMs < startMs ? selectedRange.startsAt : time;
+
+    if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
+      setError("Elegí un rango de horas consecutivas disponibles.");
+      setSelectedRange({
+        courtId: court.id,
+        courtName: court.name,
+        startsAt: time,
+      });
+      return;
+    }
+
+    setSelectedRange({
+      courtId: court.id,
+      courtName: court.name,
+      startsAt,
+      endsAt,
+    });
+  }
 
   async function createReservation() {
-    if (!selectedSlot) {
+    if (!selectedRange?.endsAt || durationMinutes <= 0) {
       return;
     }
 
@@ -123,9 +285,10 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          courtId: selectedSlot.courtId,
-          startsAt: selectedSlot.startsAt,
-          durationMinutes: duration,
+          courtId: selectedRange.courtId,
+          date,
+          startsAt: selectedRange.startsAt,
+          durationMinutes,
         }),
       });
       const data = await response.json();
@@ -140,13 +303,14 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
       setSlots((currentSlots) =>
         currentSlots.filter(
           (slot) =>
-            !(
-              slot.courtId === selectedSlot.courtId &&
-              slot.startsAt === selectedSlot.startsAt
-            ),
+            slot.courtId !== selectedRange.courtId ||
+            !doSlotsOverlap(slot, {
+              startsAt: selectedRange.startsAt,
+              endsAt: selectedRange.endsAt!,
+            }),
         ),
       );
-      setSelectedSlot(null);
+      setSelectedRange(null);
     } catch (createError) {
       setError(
         createError instanceof Error
@@ -174,27 +338,10 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
             />
           </label>
 
-          <fieldset className="grid gap-2">
-            <legend className="text-sm font-medium text-[#26382f]">
-              Duracion
-            </legend>
-            <div className="grid grid-cols-3 gap-2">
-              {TURN_DURATIONS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setDuration(option)}
-                  className={`h-11 rounded-md border text-sm font-semibold transition ${
-                    duration === option
-                      ? "border-[#164b35] bg-[#164b35] text-white"
-                      : "border-[#cbd3c9] bg-white text-[#26382f] hover:border-[#8ea090]"
-                  }`}
-                >
-                  {option} min
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          <p className="rounded-md bg-[#f6f7f4] p-3 text-sm leading-6 text-[#526158]">
+            Selecciona una hora de inicio y una hora de fin en la cancha que
+            quieras reservar.
+          </p>
         </div>
       </div>
 
@@ -235,8 +382,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
                   <div>
                     <p className="font-semibold text-[#26382f]">{court.name}</p>
                     <p className="mt-1 text-sm text-[#526158]">
-                      Precio base {formatCurrency(settings?.basePrice ?? 0)} -{" "}
-                      {duration} minutos
+                      {formatCurrency(settings?.basePrice ?? 0)} por hora
                     </p>
                   </div>
                   <span className="rounded-md bg-[#f6f7f4] px-3 py-2 text-sm font-medium text-[#526158]">
@@ -246,33 +392,41 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
 
                 {courtSlots.length > 0 ? (
                   <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-                    {courtSlots.slice(0, 15).map((slot) => {
+                    {getTimeButtons(courtSlots).map((time) => {
+                      const selectedStartMs = selectedRange
+                        ? new Date(selectedRange.startsAt).getTime()
+                        : null;
+                      const selectedEndMs = selectedRange?.endsAt
+                        ? new Date(selectedRange.endsAt).getTime()
+                        : selectedStartMs;
+                      const timeMs = new Date(time).getTime();
                       const isSelected =
-                        selectedSlot?.courtId === slot.courtId &&
-                        selectedSlot?.startsAt === slot.startsAt;
+                        selectedRange?.courtId === court.id &&
+                        selectedStartMs !== null &&
+                        selectedEndMs !== null &&
+                        timeMs >= selectedStartMs &&
+                        timeMs <= selectedEndMs;
 
                       return (
                         <button
-                          key={`${slot.courtId}-${slot.startsAt}`}
+                          key={`${court.id}-${time}`}
                           type="button"
-                          onClick={() => setSelectedSlot(slot)}
+                          disabled={isCreating}
+                          onClick={() => selectTime(court, courtSlots, time)}
                           className={`h-10 rounded-md border text-sm font-semibold transition ${
                             isSelected
                               ? "border-[#164b35] bg-[#164b35] text-white"
-                              : "border-[#cbd3c9] bg-white text-[#26382f] hover:border-[#8ea090]"
+                              : "border-[#cbd3c9] bg-white text-[#26382f] hover:border-[#8ea090] disabled:cursor-not-allowed disabled:opacity-55"
                           }`}
                         >
-                          {new Intl.DateTimeFormat("es-AR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }).format(new Date(slot.startsAt))}
+                          {formatTime(time)}
                         </button>
                       );
                     })}
                   </div>
                 ) : (
                   <p className="mt-4 rounded-md bg-[#f6f7f4] p-3 text-sm text-[#526158]">
-                    Sin horarios para esta duracion.
+                    Sin horarios disponibles.
                   </p>
                 )}
               </div>
@@ -284,24 +438,27 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
           )}
         </div>
 
-        {selectedSlot ? (
+        {selectedRange ? (
           <div className="mt-5 rounded-md border border-[#cfe3d8] bg-[#f4fbf7] p-4 text-sm text-[#164b35]">
             <p>
-              Seleccionaste {selectedSlot.courtName} a las{" "}
-              {new Intl.DateTimeFormat("es-AR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }).format(new Date(selectedSlot.startsAt))}
-              .
+              Seleccionaste {selectedRange.courtName} desde{" "}
+              {formatTime(selectedRange.startsAt)}
+              {selectedRange.endsAt
+                ? ` hasta ${formatTime(selectedRange.endsAt)} (${selectedHours} ${
+                    selectedHours === 1 ? "hora" : "horas"
+                  }, ${formatCurrency(estimatedPrice)})`
+                : ". Ahora elegi la hora de fin."}
             </p>
-            <button
-              type="button"
-              onClick={createReservation}
-              disabled={isCreating}
-              className="mt-3 h-11 rounded-md bg-[#164b35] px-4 text-sm font-semibold text-white transition hover:bg-[#0f3827] disabled:cursor-not-allowed disabled:bg-[#8ca397]"
-            >
-              {isCreating ? "Creando reserva..." : "Reservar con sena"}
-            </button>
+            {selectedRange.endsAt ? (
+              <button
+                type="button"
+                onClick={createReservation}
+                disabled={isCreating}
+                className="mt-3 h-11 rounded-md bg-[#164b35] px-4 text-sm font-semibold text-white transition hover:bg-[#0f3827] disabled:cursor-not-allowed disabled:bg-[#8ca397]"
+              >
+                {isCreating ? "Creando reserva..." : "Reservar con sena"}
+              </button>
+            ) : null}
           </div>
         ) : null}
 

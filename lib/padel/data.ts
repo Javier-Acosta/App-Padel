@@ -36,6 +36,7 @@ type PocketBaseReservationRecord = {
   id: string;
   userId: string;
   courtId: string;
+  reservationDate?: string;
   startsAt: string;
   endsAt: string;
   durationMinutes: string;
@@ -156,6 +157,44 @@ export async function getReservationsForRange(
       id: record.id,
       userId: record.userId,
       courtId: record.courtId,
+      reservationDate: record.reservationDate ?? record.startsAt.slice(0, 10),
+      startsAt: record.startsAt,
+      endsAt: record.endsAt,
+      durationMinutes: Number(record.durationMinutes) as TurnDuration,
+      status: record.status,
+      totalPrice: record.totalPrice,
+      depositAmount: record.depositAmount,
+      expiresAt: record.expiresAt,
+      createdAt: record.created,
+      updatedAt: record.updated,
+    }),
+  );
+}
+
+export async function getReservationsForDate(
+  token: string,
+  date: string,
+  startsAt: string,
+  endsAt: string,
+) {
+  const result = await listPocketBaseRecords<PocketBaseReservationRecord>(
+    "reservations",
+    {
+      token,
+      searchParams: {
+        page: 1,
+        perPage: 200,
+        filter: `reservationDate = "${date}" || (reservationDate = "" && startsAt < "${endsAt}" && endsAt > "${startsAt}")`,
+      },
+    },
+  );
+
+  return result.items.map(
+    (record): Reservation => ({
+      id: record.id,
+      userId: record.userId,
+      courtId: record.courtId,
+      reservationDate: record.reservationDate ?? date,
       startsAt: record.startsAt,
       endsAt: record.endsAt,
       durationMinutes: Number(record.durationMinutes) as TurnDuration,
@@ -203,6 +242,7 @@ export async function createPendingReservation(
   input: {
     userId: string;
     courtId: string;
+    reservationDate: string;
     startsAt: string;
     endsAt: string;
     durationMinutes: TurnDuration;
@@ -216,6 +256,7 @@ export async function createPendingReservation(
     {
       userId: input.userId,
       courtId: input.courtId,
+      reservationDate: input.reservationDate,
       startsAt: input.startsAt,
       endsAt: input.endsAt,
       durationMinutes: String(input.durationMinutes),
@@ -231,6 +272,7 @@ export async function createPendingReservation(
     id: record.id,
     userId: record.userId,
     courtId: record.courtId,
+    reservationDate: record.reservationDate ?? input.reservationDate,
     startsAt: record.startsAt,
     endsAt: record.endsAt,
     durationMinutes: Number(record.durationMinutes) as TurnDuration,
