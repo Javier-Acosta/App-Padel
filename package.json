@@ -9,7 +9,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "mcp:app-padel": "node mcp-app-padel/server.mjs",
+    "pb:schema": "node scripts/sync-pocketbase-schema.mjs",
+    "pb:seed": "node scripts/seed-pocketbase.mjs",
+    "pb:seed:users": "node scripts/seed-test-users.mjs"
   },
   "dependencies": {
     "next": "16.2.9",
