@@ -8,6 +8,7 @@ import type {
 } from "@/lib/domain/reservations";
 import {
   createPocketBaseRecord,
+  getPocketBaseFileUrl,
   listPocketBaseRecords,
 } from "@/lib/pocketbase/client";
 
@@ -21,12 +22,14 @@ type PocketBaseCourtRecord = {
 
 type PocketBaseClubSettingsRecord = {
   id: string;
+  collectionName?: string;
   key: string;
   openingHours: ClubSettings["openingHours"];
   basePrice: number;
   depositAmount: number;
   paymentHoldMinutes: number;
   cancellationCutoffHours: number;
+  logo?: string;
 };
 
 type PocketBaseReservationRecord = {
@@ -63,6 +66,25 @@ function mapCourt(record: PocketBaseCourtRecord): Court {
   };
 }
 
+function mapClubSettings(record: PocketBaseClubSettingsRecord): ClubSettings {
+  return {
+    openingHours: record.openingHours,
+    basePrice: record.basePrice,
+    depositAmount: record.depositAmount,
+    paymentHoldMinutes: record.paymentHoldMinutes,
+    cancellationCutoffHours: record.cancellationCutoffHours,
+    ...(record.logo
+      ? {
+          logoUrl: getPocketBaseFileUrl(
+            record.collectionName ?? "club_settings",
+            record.id,
+            record.logo,
+          ),
+        }
+      : {}),
+  };
+}
+
 export async function getActiveCourts(token: string) {
   const result = await listPocketBaseRecords<PocketBaseCourtRecord>("courts", {
     token,
@@ -90,7 +112,26 @@ export async function getClubSettings(token: string) {
     },
   );
 
-  return result.items[0] ?? null;
+  return result.items[0] ? mapClubSettings(result.items[0]) : null;
+}
+
+export async function getPublicClubSettings() {
+  try {
+    const result = await listPocketBaseRecords<PocketBaseClubSettingsRecord>(
+      "club_settings",
+      {
+        searchParams: {
+          page: 1,
+          perPage: 1,
+          filter: 'key = "default"',
+        },
+      },
+    );
+
+    return result.items[0] ? mapClubSettings(result.items[0]) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getReservationsForRange(

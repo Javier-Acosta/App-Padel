@@ -16,6 +16,26 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Environment variables
+
+The app needs PocketBase credentials at runtime. Create `.env.local` for local
+development, or configure these same variables in your production hosting
+provider:
+
+```bash
+POCKETBASE_URL=http://127.0.0.1:8090
+POCKETBASE_ADMIN_EMAIL=admin@example.com
+POCKETBASE_ADMIN_PASSWORD=change-me
+```
+
+`.env.local` is intentionally ignored by git, so production will not receive it
+automatically. Add the variables in the server/platform environment and restart
+the Next.js app after changing them.
+
+If PocketBase runs on the same production server as Next.js, `POCKETBASE_URL`
+can usually stay as `http://127.0.0.1:8090`. If PocketBase runs on another host,
+use that server URL instead.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

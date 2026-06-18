@@ -49,6 +49,16 @@ function buildPocketBaseUrl(
   return url;
 }
 
+export function getPocketBaseFileUrl(
+  collection: string,
+  recordId: string,
+  filename: string,
+) {
+  return buildPocketBaseUrl(
+    `/api/files/${collection}/${recordId}/${filename}`,
+  ).toString();
+}
+
 export async function pocketBaseRequest<T>(
   path: string,
   options: PocketBaseRequestOptions = {},

@@ -158,6 +158,23 @@ function jsonField(name, options = {}) {
   };
 }
 
+function fileField(name, options = {}) {
+  return {
+    name,
+    type: "file",
+    required: options.required ?? false,
+    maxSelect: options.maxSelect ?? 1,
+    maxSize: options.maxSize ?? 5 * 1024 * 1024,
+    mimeTypes: options.mimeTypes ?? [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/svg+xml",
+    ],
+    thumbs: options.thumbs ?? ["0x80", "0x240"],
+  };
+}
+
 function selectField(name, values, options = {}) {
   return {
     name,
@@ -307,6 +324,7 @@ function buildDefinitions(ids = {}) {
         numberField("depositAmount", { required: true }),
         numberField("paymentHoldMinutes", { required: true, onlyInt: true }),
         numberField("cancellationCutoffHours", { required: true, onlyInt: true }),
+        fileField("logo"),
       ],
       indexes: [
         "CREATE UNIQUE INDEX `idx_club_settings_key` ON `club_settings` (`key`)",

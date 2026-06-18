@@ -52,6 +52,7 @@ export type ClubSettings = {
   depositAmount: number;
   paymentHoldMinutes: number;
   cancellationCutoffHours: number;
+  logoUrl?: string;
 };
 
 export type Promotion = {
