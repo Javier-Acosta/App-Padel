@@ -87,3 +87,40 @@ export async function listPocketBaseRecords<T>(
   );
 }
 
+export async function createPocketBaseRecord<T>(
+  collection: string,
+  body: unknown,
+  options: Omit<PocketBaseRequestOptions, "method" | "body"> = {},
+) {
+  return pocketBaseRequest<T>(`/api/collections/${collection}/records`, {
+    ...options,
+    method: "POST",
+    body,
+  });
+}
+
+export async function authenticatePocketBaseUser<T>(
+  identity: string,
+  password: string,
+) {
+  return pocketBaseRequest<{ token: string; record: T }>(
+    "/api/collections/users/auth-with-password",
+    {
+      method: "POST",
+      body: {
+        identity,
+        password,
+      },
+    },
+  );
+}
+
+export async function refreshPocketBaseUserAuth<T>(token: string) {
+  return pocketBaseRequest<{ token: string; record: T }>(
+    "/api/collections/users/auth-refresh",
+    {
+      method: "POST",
+      token,
+    },
+  );
+}

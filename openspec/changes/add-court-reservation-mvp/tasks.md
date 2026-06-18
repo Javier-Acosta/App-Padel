@@ -9,17 +9,17 @@
 
 ## 2. Authentication and Roles
 
-- [ ] Implement user registration and login.
-- [ ] Add user/admin role support.
-- [ ] Protect reservation and admin routes by role.
+- [x] Implement user registration and login.
+- [x] Add user/admin role support.
+- [x] Protect reservation and admin routes by role.
 
 ## 3. Availability and Reservation Flow
 
-- [ ] Implement availability calculation for 60, 90, and 120 minute durations.
-- [ ] Exclude confirmed reservations, non-expired pending reservations, and admin blocks from availability.
-- [ ] Create pending payment reservations with expiration.
+- [x] Implement availability calculation for 60, 90, and 120 minute durations.
+- [x] Exclude confirmed reservations, non-expired pending reservations, and admin blocks from availability.
+- [x] Create pending payment reservations with expiration.
 - [ ] Expire stale pending payment reservations and release their slots.
-- [ ] Prevent overlapping active reservations server-side.
+- [x] Prevent overlapping active reservations server-side.
 
 ## 4. MercadoPago Payment
 
@@ -31,8 +31,8 @@
 
 ## 5. User Experience
 
-- [ ] Build calendar availability view.
-- [ ] Let users choose date, duration, court, and available start time.
+- [x] Build calendar availability view.
+- [x] Let users choose date, duration, court, and available start time.
 - [ ] Redirect users to MercadoPago checkout.
 - [ ] Show reservation status after checkout return.
 - [ ] Add "My reservations" view.
