@@ -1,6 +1,6 @@
 export const MIN_TURN_DURATION_MINUTES = 60;
 export const MAX_TURN_DURATION_MINUTES = 15 * 60;
-export const TURN_DURATION_STEP_MINUTES = 60;
+export const TURN_DURATION_STEP_MINUTES = 30;
 
 export type TurnDuration = number;
 
@@ -131,7 +131,7 @@ export function isTurnDuration(value: number): value is TurnDuration {
 
 export function assertTurnDuration(value: number): TurnDuration {
   if (!isTurnDuration(value)) {
-    throw new Error("Turn duration must be between 1 and 15 full hours.");
+    throw new Error("Turn duration must be between 1 and 15 hours in 30-minute steps.");
   }
 
   return value;

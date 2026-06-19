@@ -82,6 +82,10 @@ export async function pocketBaseRequest<T>(
     );
   }
 
+  if (response.status === 204) {
+    return null as T;
+  }
+
   return (await response.json()) as T;
 }
 
@@ -134,6 +138,30 @@ export async function createPocketBaseRecord<T>(
     ...options,
     method: "POST",
     body,
+  });
+}
+
+export async function updatePocketBaseRecord<T>(
+  collection: string,
+  id: string,
+  body: unknown,
+  options: Omit<PocketBaseRequestOptions, "method" | "body"> = {},
+) {
+  return pocketBaseRequest<T>(`/api/collections/${collection}/records/${id}`, {
+    ...options,
+    method: "PATCH",
+    body,
+  });
+}
+
+export async function deletePocketBaseRecord(
+  collection: string,
+  id: string,
+  options: Omit<PocketBaseRequestOptions, "method" | "body"> = {},
+) {
+  await pocketBaseRequest(`/api/collections/${collection}/records/${id}`, {
+    ...options,
+    method: "DELETE",
   });
 }
 

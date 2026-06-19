@@ -8,8 +8,10 @@ import type {
 } from "@/lib/domain/reservations";
 import {
   createPocketBaseRecord,
+  deletePocketBaseRecord,
   getPocketBaseFileUrl,
   listPocketBaseRecords,
+  updatePocketBaseRecord,
 } from "@/lib/pocketbase/client";
 
 type PocketBaseCourtRecord = {
@@ -86,6 +88,30 @@ function mapClubSettings(record: PocketBaseClubSettingsRecord): ClubSettings {
   };
 }
 
+function mapCourtBlock(record: PocketBaseCourtBlockRecord): CourtBlock {
+  return {
+    id: record.id,
+    courtId: record.courtId,
+    startsAt: record.startsAt,
+    endsAt: record.endsAt,
+    reason: record.reason,
+    createdBy: record.createdBy,
+  };
+}
+
+export async function getAllCourts(token: string) {
+  const result = await listPocketBaseRecords<PocketBaseCourtRecord>("courts", {
+    token,
+    searchParams: {
+      page: 1,
+      perPage: 100,
+      sort: "name",
+    },
+  });
+
+  return result.items.map(mapCourt);
+}
+
 export async function getActiveCourts(token: string) {
   const result = await listPocketBaseRecords<PocketBaseCourtRecord>("courts", {
     token,
@@ -98,6 +124,40 @@ export async function getActiveCourts(token: string) {
   });
 
   return result.items.map(mapCourt);
+}
+
+export async function createCourt(
+  token: string,
+  input: Pick<Court, "name" | "active">,
+) {
+  const record = await createPocketBaseRecord<PocketBaseCourtRecord>(
+    "courts",
+    {
+      name: input.name,
+      active: input.active,
+    },
+    { token },
+  );
+
+  return mapCourt(record);
+}
+
+export async function updateCourt(
+  token: string,
+  id: string,
+  input: Pick<Court, "name" | "active">,
+) {
+  const record = await updatePocketBaseRecord<PocketBaseCourtRecord>(
+    "courts",
+    id,
+    {
+      name: input.name,
+      active: input.active,
+    },
+    { token },
+  );
+
+  return mapCourt(record);
 }
 
 export async function getClubSettings(token: string) {
@@ -114,6 +174,64 @@ export async function getClubSettings(token: string) {
   );
 
   return result.items[0] ? mapClubSettings(result.items[0]) : null;
+}
+
+export async function getClubSettingsRecord(token: string) {
+  const result = await listPocketBaseRecords<PocketBaseClubSettingsRecord>(
+    "club_settings",
+    {
+      token,
+      searchParams: {
+        page: 1,
+        perPage: 1,
+        filter: 'key = "default"',
+      },
+    },
+  );
+
+  const record = result.items[0];
+
+  return record
+    ? {
+        id: record.id,
+        key: record.key,
+        settings: mapClubSettings(record),
+      }
+    : null;
+}
+
+export async function upsertClubSettings(
+  token: string,
+  input: ClubSettings,
+) {
+  const existing = await getClubSettingsRecord(token);
+  const body = {
+    key: "default",
+    openingHours: input.openingHours,
+    basePrice: input.basePrice,
+    depositAmount: input.depositAmount,
+    paymentHoldMinutes: input.paymentHoldMinutes,
+    cancellationCutoffHours: input.cancellationCutoffHours,
+  };
+
+  if (!existing) {
+    const record = await createPocketBaseRecord<PocketBaseClubSettingsRecord>(
+      "club_settings",
+      body,
+      { token },
+    );
+
+    return mapClubSettings(record);
+  }
+
+  const record = await updatePocketBaseRecord<PocketBaseClubSettingsRecord>(
+    "club_settings",
+    existing.id,
+    body,
+    { token },
+  );
+
+  return mapClubSettings(record);
 }
 
 export async function getPublicClubSettings() {
@@ -225,16 +343,41 @@ export async function getCourtBlocksForRange(
     },
   );
 
-  return result.items.map(
-    (record): CourtBlock => ({
-      id: record.id,
-      courtId: record.courtId,
-      startsAt: record.startsAt,
-      endsAt: record.endsAt,
-      reason: record.reason,
-      createdBy: record.createdBy,
-    }),
+  return result.items.map(mapCourtBlock);
+}
+
+export async function getUpcomingCourtBlocks(token: string) {
+  const result = await listPocketBaseRecords<PocketBaseCourtBlockRecord>(
+    "court_blocks",
+    {
+      token,
+      searchParams: {
+        page: 1,
+        perPage: 100,
+        filter: `endsAt >= "${new Date().toISOString()}"`,
+        sort: "startsAt",
+      },
+    },
   );
+
+  return result.items.map(mapCourtBlock);
+}
+
+export async function createCourtBlock(
+  token: string,
+  input: Omit<CourtBlock, "id">,
+) {
+  const record = await createPocketBaseRecord<PocketBaseCourtBlockRecord>(
+    "court_blocks",
+    input,
+    { token },
+  );
+
+  return mapCourtBlock(record);
+}
+
+export async function deleteCourtBlock(token: string, id: string) {
+  await deletePocketBaseRecord("court_blocks", id, { token });
 }
 
 export async function createPendingReservation(

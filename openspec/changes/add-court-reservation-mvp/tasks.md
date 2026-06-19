@@ -15,7 +15,7 @@
 
 ## 3. Availability and Reservation Flow
 
-- [x] Implement availability calculation for 60, 90, and 120 minute durations.
+- [x] Implement availability calculation for reservation durations in 30-minute increments.
 - [x] Exclude confirmed reservations, non-expired pending reservations, and admin blocks from availability.
 - [x] Create pending payment reservations with expiration.
 - [ ] Expire stale pending payment reservations and release their slots.

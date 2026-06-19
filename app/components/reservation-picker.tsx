@@ -27,7 +27,7 @@ type SelectedRange = {
   endsAt?: string;
 };
 
-const ONE_HOUR_MS = 60 * 60 * 1000;
+const HALF_HOUR_MS = 30 * 60 * 1000;
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-AR", {
@@ -52,24 +52,19 @@ function doSlotsOverlap(
 }
 
 function formatTime(value: string) {
-  return new Intl.DateTimeFormat("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
+  const date = new Date(value);
+  const hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
 
-function isFullHour(value: string) {
-  return new Date(value).getMinutes() === 0;
+  return `${hours}:${minutes}`;
 }
 
 function getTimeButtons(slots: AvailabilitySlot[]) {
   const times = new Set<string>();
 
   for (const slot of slots) {
-    if (isFullHour(slot.startsAt)) {
-      times.add(slot.startsAt);
-      times.add(slot.endsAt);
-    }
+    times.add(slot.startsAt);
+    times.add(slot.endsAt);
   }
 
   return Array.from(times).sort(
@@ -85,15 +80,23 @@ function isRangeAvailable(
   const startMs = new Date(startsAt).getTime();
   const endMs = new Date(endsAt).getTime();
 
-  if (endMs <= startMs || endMs - startMs > MAX_TURN_DURATION_MINUTES * 60 * 1000) {
+  if (
+    endMs - startMs < 60 * 60 * 1000 ||
+    endMs - startMs > MAX_TURN_DURATION_MINUTES * 60 * 1000 ||
+    (endMs - startMs) % HALF_HOUR_MS !== 0
+  ) {
     return false;
   }
 
-  for (let cursor = startMs; cursor < endMs; cursor += ONE_HOUR_MS) {
+  for (
+    let cursor = startMs;
+    cursor <= endMs - 60 * 60 * 1000;
+    cursor += HALF_HOUR_MS
+  ) {
     const hasSlot = slots.some(
       (slot) =>
         new Date(slot.startsAt).getTime() === cursor &&
-        new Date(slot.endsAt).getTime() === cursor + ONE_HOUR_MS,
+        new Date(slot.endsAt).getTime() === cursor + 60 * 60 * 1000,
     );
 
     if (!hasSlot) {
@@ -223,7 +226,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
       const endsAt = clickedMs < startMs ? selectedRange.startsAt : time;
 
       if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
-        setError("Elegí un rango de horas consecutivas disponibles.");
+        setError("Elegí un rango de al menos 1 hora en bloques de 30 minutos disponibles.");
         setSelectedRange({
           courtId: court.id,
           courtName: court.name,
@@ -252,7 +255,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
     const endsAt = clickedMs < startMs ? selectedRange.startsAt : time;
 
     if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
-      setError("Elegí un rango de horas consecutivas disponibles.");
+      setError("Elegí un rango de al menos 1 hora en bloques de 30 minutos disponibles.");
       setSelectedRange({
         courtId: court.id,
         courtName: court.name,

@@ -40,7 +40,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         throw new Error(data.error ?? "No pudimos completar la operación.");
       }
 
-      router.push("/reservas");
+      router.push(data.user?.role === "admin" ? "/admin" : "/reservas");
       router.refresh();
     } catch (submitError) {
       setError(

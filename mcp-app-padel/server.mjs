@@ -112,7 +112,7 @@ async function callTool(name, args = {}) {
             "",
             "Current MVP scope:",
             "- Registered users reserve court turns from a calendar.",
-            "- Supported turn durations are 60, 90, and 120 minutes.",
+            "- Supported turn durations start at 60 minutes and can grow in 30-minute increments.",
             "- Reservations require a non-refundable MercadoPago deposit.",
             "- Payment approval confirms reservations automatically.",
             "- Users can cancel up to 3 hours before the turn.",

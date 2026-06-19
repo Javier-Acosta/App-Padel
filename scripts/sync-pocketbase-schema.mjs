@@ -46,8 +46,8 @@ const requiredEnv = [
   "POCKETBASE_ADMIN_PASSWORD",
 ];
 
-const reservationDurationValues = Array.from({ length: 15 }, (_, index) =>
-  String((index + 1) * 60),
+const reservationDurationValues = Array.from({ length: 29 }, (_, index) =>
+  String(60 + index * 30),
 );
 
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);

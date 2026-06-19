@@ -130,7 +130,7 @@ User selects duration
 A slot is available only when:
 
 - The court is active.
-- The requested duration is 60, 90, or 120 minutes.
+- The requested duration is at least 60 minutes, no more than 900 minutes, and aligned to a 30-minute increment.
 - The requested time range is inside club opening hours.
 - No confirmed reservation overlaps the requested range.
 - No non-expired pending payment reservation overlaps the requested range.

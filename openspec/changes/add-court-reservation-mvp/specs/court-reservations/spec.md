@@ -16,18 +16,18 @@ The system SHALL allow registered users to create court reservations for availab
 
 ### Requirement: Supported turn durations are fixed
 
-The system SHALL only allow reservation durations of 60, 90, or 120 minutes.
+The system SHALL only allow reservation durations from 60 to 900 minutes in 30-minute increments.
 
 #### Scenario: User selects a supported duration
 
 - **GIVEN** a user is creating a reservation
-- **WHEN** the user selects 60, 90, or 120 minutes
+- **WHEN** the user selects a duration from 60 to 900 minutes in 30-minute increments
 - **THEN** the system accepts the duration.
 
 #### Scenario: User selects an unsupported duration
 
 - **GIVEN** a user is creating a reservation
-- **WHEN** the user selects any duration other than 60, 90, or 120 minutes
+- **WHEN** the user selects a duration shorter than 60 minutes, longer than 900 minutes, or not aligned to a 30-minute increment
 - **THEN** the system rejects the reservation request.
 
 ### Requirement: Availability is calculated for the full duration

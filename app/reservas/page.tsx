@@ -25,7 +25,17 @@ export default async function ReservationsPage() {
           <Link href="/" className="text-lg font-semibold">
             AppPadel
           </Link>
-          <LogoutButton />
+          <div className="flex items-center gap-2">
+            {user.role === "admin" ? (
+              <Link
+                href="/admin"
+                className="rounded-md bg-[#164b35] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0f3827]"
+              >
+                Panel admin
+              </Link>
+            ) : null}
+            <LogoutButton />
+          </div>
         </nav>
 
         <section className="mt-10">
@@ -37,6 +47,14 @@ export default async function ReservationsPage() {
             Elegi una fecha, cuantas horas queres jugar y revisa las canchas
             disponibles del club.
           </p>
+          {user.role === "admin" ? (
+            <Link
+              href="/admin"
+              className="mt-5 inline-flex h-11 items-center justify-center rounded-md bg-[#164b35] px-5 text-sm font-semibold text-white transition hover:bg-[#0f3827]"
+            >
+              Ir al panel de administracion
+            </Link>
+          ) : null}
         </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
