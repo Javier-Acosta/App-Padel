@@ -13,6 +13,7 @@ import {
   listPocketBaseRecords,
   updatePocketBaseRecord,
 } from "@/lib/pocketbase/client";
+import { normalizeOpeningHours } from "@/lib/padel/opening-hours";
 
 type PocketBaseCourtRecord = {
   id: string;
@@ -71,7 +72,7 @@ function mapCourt(record: PocketBaseCourtRecord): Court {
 
 function mapClubSettings(record: PocketBaseClubSettingsRecord): ClubSettings {
   return {
-    openingHours: record.openingHours,
+    openingHours: normalizeOpeningHours(record.openingHours),
     basePrice: record.basePrice,
     depositAmount: record.depositAmount,
     paymentHoldMinutes: record.paymentHoldMinutes,

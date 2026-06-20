@@ -11,16 +11,7 @@ import {
   updateCourt,
   upsertClubSettings,
 } from "@/lib/padel/data";
-
-const dayKeys = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-] as const;
+import { normalizeOpeningHours, clubDayKeys } from "@/lib/padel/opening-hours";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -81,7 +72,7 @@ export async function updateSettingsAction(formData: FormData) {
   const token = await requireAdminToken();
   const openingHours: ClubSettings["openingHours"] = {};
 
-  for (const dayKey of dayKeys) {
+  for (const dayKey of clubDayKeys) {
     const closed = formData.get(`${dayKey}.closed`) === "on";
     const startsAt = getString(formData, `${dayKey}.startsAt`);
     const endsAt = getString(formData, `${dayKey}.endsAt`);
@@ -93,7 +84,7 @@ export async function updateSettingsAction(formData: FormData) {
   }
 
   await upsertClubSettings(token, {
-    openingHours,
+    openingHours: normalizeOpeningHours(openingHours),
     basePrice: getNumber(formData, "basePrice"),
     depositAmount: getNumber(formData, "depositAmount"),
     paymentHoldMinutes: getNumber(formData, "paymentHoldMinutes"),

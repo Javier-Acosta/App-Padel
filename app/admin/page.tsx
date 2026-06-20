@@ -16,6 +16,11 @@ import {
   getClubSettingsRecord,
   getUpcomingCourtBlocks,
 } from "@/lib/padel/data";
+import {
+  CLUB_OPENING_END,
+  CLUB_OPENING_START,
+  createDefaultOpeningHours,
+} from "@/lib/padel/opening-hours";
 
 const dayLabels = [
   ["monday", "Lunes"],
@@ -28,12 +33,7 @@ const dayLabels = [
 ] as const;
 
 const defaultSettings: ClubSettings = {
-  openingHours: Object.fromEntries(
-    dayLabels.map(([key]) => [
-      key,
-      { ranges: [{ startsAt: "08:00", endsAt: "23:00" }] },
-    ]),
-  ),
+  openingHours: createDefaultOpeningHours(),
   basePrice: 12000,
   depositAmount: 3000,
   paymentHoldMinutes: 10,
@@ -286,8 +286,8 @@ export default async function AdminPage() {
                 {dayLabels.map(([dayKey, label]) => {
                   const day = settings.openingHours[dayKey];
                   const range = day?.ranges[0] ?? {
-                    startsAt: "08:00",
-                    endsAt: "23:00",
+                    startsAt: CLUB_OPENING_START,
+                    endsAt: CLUB_OPENING_END,
                   };
 
                   return (
@@ -368,7 +368,7 @@ export default async function AdminPage() {
               <input
                 type="time"
                 name="startsAt"
-                defaultValue="08:00"
+                defaultValue={CLUB_OPENING_START}
                 className={textInputClassName()}
               />
             </Field>
