@@ -20,3 +20,10 @@ export function getServerEnv(): ServerEnv {
   };
 }
 
+export function getOptionalServerEnv() {
+  return {
+    MERCADOPAGO_ACCESS_TOKEN: process.env.MERCADOPAGO_ACCESS_TOKEN,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  };
+}
+

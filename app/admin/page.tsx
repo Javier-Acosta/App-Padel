@@ -6,14 +6,22 @@ import {
   createCourtBlockAction,
   deleteCourtBlockAction,
   updateCourtAction,
+  updateReservationStatusAction,
   updateSettingsAction,
 } from "@/app/admin/actions";
 import { LogoutButton } from "@/app/components/logout-button";
 import { getAuthToken, getCurrentUser } from "@/lib/auth/session";
-import type { ClubSettings, Court } from "@/lib/domain/reservations";
+import type {
+  ClubSettings,
+  Court,
+  ReservationStatus,
+} from "@/lib/domain/reservations";
+import { isReservationStatus } from "@/lib/domain/reservations";
 import {
   getAllCourts,
   getClubSettingsRecord,
+  getUserProfilesByIds,
+  getUpcomingReservations,
   getUpcomingCourtBlocks,
 } from "@/lib/padel/data";
 import {
@@ -40,6 +48,33 @@ const defaultSettings: ClubSettings = {
   cancellationCutoffHours: 3,
 };
 
+const statusLabels: Record<ReservationStatus, string> = {
+  pending_payment: "Pendiente de pago",
+  confirmed: "Confirmada",
+  expired: "Expirada",
+  cancelled_by_user: "Cancelada por usuario",
+  cancelled_by_admin: "Cancelada por admin",
+  completed: "Completada",
+  no_show: "Ausente",
+};
+
+const adminStatusActions = [
+  ["confirmed", "Confirmar"],
+  ["cancelled_by_admin", "Cancelar"],
+  ["completed", "Completada"],
+  ["no_show", "Ausente"],
+] as const satisfies ReadonlyArray<readonly [ReservationStatus, string]>;
+
+const filterStatusOptions = [
+  ["", "Todos"],
+  ["pending_payment", "Pendiente de pago"],
+  ["confirmed", "Confirmadas"],
+  ["cancelled_by_user", "Canceladas por usuario"],
+  ["cancelled_by_admin", "Canceladas por admin"],
+  ["completed", "Completadas"],
+  ["no_show", "Ausentes"],
+] as const;
+
 function formatDateTime(value: string) {
   const date = new Date(value);
   const day = new Intl.DateTimeFormat("es-AR", {
@@ -51,6 +86,10 @@ function formatDateTime(value: string) {
   const minutes = String(date.getMinutes()).padStart(2, "0");
 
   return `${day} ${hours}:${minutes}`;
+}
+
+function formatDateTimeRange(startsAt: string, endsAt: string) {
+  return `${formatDateTime(startsAt)} hasta ${formatDateTime(endsAt)}`;
 }
 
 function getTodayValue() {
@@ -118,7 +157,19 @@ function CourtForm({ court }: { court: Court }) {
   );
 }
 
-export default async function AdminPage() {
+function getSearchParam(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string,
+) {
+  const value = searchParams[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const [user, token] = await Promise.all([getCurrentUser(), getAuthToken()]);
 
   if (!user || !token) {
@@ -129,13 +180,33 @@ export default async function AdminPage() {
     redirect("/reservas");
   }
 
-  const [courts, settingsRecord, blocks] = await Promise.all([
+  const resolvedSearchParams = await searchParams;
+  const statusParam = getSearchParam(resolvedSearchParams, "status");
+  const courtIdParam = getSearchParam(resolvedSearchParams, "courtId");
+  const dateParam = getSearchParam(resolvedSearchParams, "date");
+  const reservationFilters = {
+    ...(statusParam && isReservationStatus(statusParam)
+      ? { status: statusParam }
+      : {}),
+    ...(courtIdParam ? { courtId: courtIdParam } : {}),
+    ...(dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+      ? { date: dateParam }
+      : {}),
+  };
+
+  const [courts, settingsRecord, blocks, reservations] = await Promise.all([
     getAllCourts(token),
     getClubSettingsRecord(token),
     getUpcomingCourtBlocks(token),
+    getUpcomingReservations(token, reservationFilters),
   ]);
+  const reservationUsers = await getUserProfilesByIds(
+    token,
+    reservations.map((reservation) => reservation.userId),
+  );
   const settings = settingsRecord?.settings ?? defaultSettings;
   const courtNameById = new Map(courts.map((court) => [court.id, court.name]));
+  const userById = new Map(reservationUsers.map((item) => [item.id, item]));
 
   return (
     <main className="min-h-screen bg-[#f6f7f4] px-6 py-8 text-[#1b241f]">
@@ -326,6 +397,135 @@ export default async function AdminPage() {
 
               <SubmitButton>Guardar configuracion</SubmitButton>
             </form>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-lg border border-[#d9ded5] bg-white p-5 shadow-sm">
+          <h2 className="text-xl font-semibold text-[#26382f]">
+            Reservas proximas
+          </h2>
+          <p className="mt-1 text-sm text-[#526158]">
+            Controla pagos, cancelaciones y asistencia desde el panel.
+          </p>
+
+          <form className="mt-5 grid gap-3 rounded-md bg-[#f6f7f4] p-4 md:grid-cols-[1fr_1fr_1fr_auto]">
+            <Field label="Estado">
+              <select
+                name="status"
+                defaultValue={reservationFilters.status ?? ""}
+                className={textInputClassName("appearance-none")}
+              >
+                {filterStatusOptions.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Cancha">
+              <select
+                name="courtId"
+                defaultValue={reservationFilters.courtId ?? ""}
+                className={textInputClassName("appearance-none")}
+              >
+                <option value="">Todas</option>
+                {courts.map((court) => (
+                  <option key={court.id} value={court.id}>
+                    {court.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Fecha">
+              <input
+                type="date"
+                name="date"
+                defaultValue={reservationFilters.date ?? ""}
+                className={textInputClassName()}
+              />
+            </Field>
+            <div className="flex gap-2 self-end">
+              <SubmitButton>Filtrar</SubmitButton>
+              <Link
+                href="/admin"
+                className="inline-flex h-10 items-center rounded-md border border-[#cbd3c9] bg-white px-4 text-sm font-semibold text-[#26382f]"
+              >
+                Limpiar
+              </Link>
+            </div>
+          </form>
+
+          <div className="mt-5 grid gap-3">
+            {reservations.length > 0 ? (
+              reservations.map((reservation) => {
+                const reservationUser = userById.get(reservation.userId);
+
+                return (
+                    <div
+                      key={reservation.id}
+                      className="grid gap-3 rounded-md border border-[#e2e6df] p-4 lg:grid-cols-[1fr_auto]"
+                    >
+                      <div>
+                        <p className="font-semibold text-[#26382f]">
+                          {courtNameById.get(reservation.courtId) ?? "Cancha"}
+                        </p>
+                        <p className="mt-1 text-sm text-[#526158]">
+                          {formatDateTimeRange(
+                            reservation.startsAt,
+                            reservation.endsAt,
+                          )}
+                        </p>
+                        <div className="mt-3 grid gap-1 text-sm text-[#526158]">
+                          <p className="font-semibold text-[#26382f]">
+                            {reservationUser?.name ?? "Usuario"}
+                          </p>
+                          <p>
+                            {reservationUser?.email ?? reservation.userId}
+                            {reservationUser?.phone
+                              ? ` - ${reservationUser.phone}`
+                              : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-[auto_1fr] lg:min-w-[480px]">
+                        <span className="h-10 self-start rounded-md bg-[#f6f7f4] px-3 py-2 text-sm font-semibold text-[#526158]">
+                          {statusLabels[reservation.status]}
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {adminStatusActions.map(([status, label]) => (
+                            <form
+                              key={`${reservation.id}-${status}`}
+                              action={updateReservationStatusAction}
+                            >
+                              <input
+                                type="hidden"
+                                name="id"
+                                value={reservation.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="status"
+                                value={status}
+                              />
+                              <button
+                                type="submit"
+                                disabled={reservation.status === status}
+                                className="h-10 rounded-md border border-[#cbd3c9] bg-white px-3 text-sm font-semibold text-[#26382f] transition hover:border-[#8ea090] disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {label}
+                              </button>
+                            </form>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                );
+              })
+            ) : (
+              <p className="rounded-md bg-[#f6f7f4] p-4 text-sm text-[#526158]">
+                No hay reservas proximas.
+              </p>
+            )}
           </div>
         </section>
 

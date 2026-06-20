@@ -1,51 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AppPadel
 
-## Getting Started
+Este es un proyecto [Next.js](https://nextjs.org) creado con [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-First, run the development server:
+## Primeros pasos
+
+Primero, inicia el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
+# o
 yarn dev
-# or
+# o
 pnpm dev
-# or
+# o
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en el navegador para ver el resultado.
 
-## Environment variables
+## Variables de entorno
 
-The app needs PocketBase credentials at runtime. Create `.env.local` for local
-development, or configure these same variables in your production hosting
-provider:
+La app necesita credenciales de PocketBase en tiempo de ejecucion. Crea `.env.local` para desarrollo local, o configura estas mismas variables en tu proveedor de hosting de produccion:
 
 ```bash
 POCKETBASE_URL=http://127.0.0.1:8090
 POCKETBASE_ADMIN_EMAIL=admin@example.com
 POCKETBASE_ADMIN_PASSWORD=change-me
+MERCADOPAGO_ACCESS_TOKEN=TEST-...
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-`.env.local` is intentionally ignored by git, so production will not receive it
-automatically. Add the variables in the server/platform environment and restart
-the Next.js app after changing them.
+`.env.local` esta ignorado intencionalmente por git, por lo que produccion no lo recibira automaticamente. Agrega las variables en el entorno del servidor o plataforma y reinicia la app Next.js despues de cambiarlas.
 
-If PocketBase runs on the same production server as Next.js, `POCKETBASE_URL`
-can usually stay as `http://127.0.0.1:8090`. If PocketBase runs on another host,
-use that server URL instead.
+Si PocketBase corre en el mismo servidor de produccion que Next.js, `POCKETBASE_URL` normalmente puede quedar como `http://127.0.0.1:8090`. Si PocketBase corre en otro host, usa la URL de ese servidor.
 
-## Club hours and logo
+`MERCADOPAGO_ACCESS_TOKEN` se usa del lado servidor para crear preferencias de Checkout Pro y validar notificaciones de pago. `NEXT_PUBLIC_APP_URL` debe ser la URL publica que Mercado Pago puede alcanzar, porque se usa para las URLs de retorno del checkout y para el endpoint de webhook:
 
-Superusers can manage the club schedule from the PocketBase admin panel:
+```text
+/api/payments/mercadopago/webhook
+```
 
-1. Open the `club_settings` collection.
-2. Edit the `default` record.
-3. Update `openingHours` to control available reservation hours.
-4. Upload the club logo in the `logo` field.
+## Horarios y logo del club
 
-Default hours are 8:00 to 23:00 every day:
+Los superusuarios pueden administrar el horario del club desde el panel de administracion de PocketBase:
+
+1. Abre la coleccion `club_settings`.
+2. Edita el registro `default`.
+3. Actualiza `openingHours` para controlar los horarios disponibles para reservas.
+4. Sube el logo del club en el campo `logo`.
+
+Los horarios predeterminados son de 8:00 a 23:00 todos los dias:
 
 ```json
 {
@@ -59,23 +63,23 @@ Default hours are 8:00 to 23:00 every day:
 }
 ```
 
-To close a day, use `{ "closed": true, "ranges": [] }` for that day.
+Para cerrar un dia, usa `{ "closed": true, "ranges": [] }` en ese dia.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Puedes empezar a editar la pagina modificando `app/page.tsx`. La pagina se actualiza automaticamente mientras editas el archivo.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Este proyecto usa [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) para optimizar y cargar automaticamente [Geist](https://vercel.com/font), una familia tipografica de Vercel.
 
-## Learn More
+## Mas informacion
 
-To learn more about Next.js, take a look at the following resources:
+Para aprender mas sobre Next.js, consulta estos recursos:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Documentacion de Next.js](https://nextjs.org/docs) - aprende sobre las funciones y API de Next.js.
+- [Learn Next.js](https://nextjs.org/learn) - un tutorial interactivo de Next.js.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Tambien puedes revisar el [repositorio de Next.js en GitHub](https://github.com/vercel/next.js); los comentarios y contribuciones son bienvenidos.
 
-## Deploy on Vercel
+## Despliegue en Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+La forma mas sencilla de desplegar tu app Next.js es usar la [plataforma Vercel](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme), de los creadores de Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Consulta la [documentacion de despliegue de Next.js](https://nextjs.org/docs/app/building-your-application/deploying) para mas detalles.

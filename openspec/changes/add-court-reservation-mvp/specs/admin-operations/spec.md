@@ -1,71 +1,70 @@
-# Admin Operations Spec
+# Especificacion de operaciones administrativas
 
-## ADDED Requirements
+## Requisitos agregados
 
-### Requirement: Admin can manage courts
+### Requisito: El administrador puede gestionar canchas
 
-The system SHALL allow admins to create, update, activate, and deactivate courts for the club.
+El sistema DEBE permitir que los administradores creen, actualicen, activen y desactiven canchas del club.
 
-#### Scenario: Admin deactivates a court
+#### Escenario: El administrador desactiva una cancha
 
-- **GIVEN** an admin is managing courts
-- **WHEN** the admin deactivates a court
-- **THEN** the court no longer appears in new user availability searches.
+- **DADO** que un administrador esta gestionando canchas
+- **CUANDO** el administrador desactiva una cancha
+- **ENTONCES** la cancha ya no aparece en nuevas busquedas de disponibilidad de usuarios.
 
-### Requirement: Admin can configure club pricing
+### Requisito: El administrador puede configurar precios del club
 
-The system SHALL allow admins to configure the club base price and deposit amount used for reservations.
+El sistema DEBE permitir que los administradores configuren el precio base del club y el monto de seña usado para las reservas.
 
-#### Scenario: Admin updates deposit amount
+#### Escenario: El administrador actualiza el monto de seña
 
-- **GIVEN** an admin changes the deposit amount
-- **WHEN** a user creates a new reservation
-- **THEN** the new reservation uses the updated deposit amount unless a promotion overrides it.
+- **DADO** que un administrador cambia el monto de seña
+- **CUANDO** un usuario crea una nueva reserva
+- **ENTONCES** la nueva reserva usa el monto de seña actualizado, salvo que una promocion lo sobrescriba.
 
-### Requirement: Admin can manage promotions
+### Requisito: El administrador puede gestionar promociones
 
-The system SHALL allow admins to define promotions that can override total price and/or deposit amount for matching turns.
+El sistema DEBE permitir que los administradores definan promociones que puedan sobrescribir el precio total y/o el monto de seña para turnos coincidentes.
 
-#### Scenario: Promotion applies to matching turn
+#### Escenario: La promocion aplica a un turno coincidente
 
-- **GIVEN** an active promotion matches the selected date and time
-- **WHEN** a user creates a reservation for that turn
-- **THEN** the reservation uses the promotional price and/or deposit override.
+- **DADO** que una promocion activa coincide con la fecha y hora seleccionadas
+- **CUANDO** un usuario crea una reserva para ese turno
+- **ENTONCES** la reserva usa el precio promocional y/o la seña promocional.
 
-#### Scenario: Promotion does not match turn
+#### Escenario: La promocion no coincide con el turno
 
-- **GIVEN** an active promotion does not match the selected date or time
-- **WHEN** a user creates a reservation
-- **THEN** the reservation uses the standard club price and deposit settings.
+- **DADO** que una promocion activa no coincide con la fecha u hora seleccionada
+- **CUANDO** un usuario crea una reserva
+- **ENTONCES** la reserva usa el precio estandar del club y la configuracion de seña.
 
-### Requirement: Admin can block court time
+### Requisito: El administrador puede bloquear horarios de cancha
 
-The system SHALL allow admins to block court time so users cannot reserve it.
+El sistema DEBE permitir que los administradores bloqueen horarios de cancha para que los usuarios no puedan reservarlos.
 
-#### Scenario: Admin creates a court block
+#### Escenario: El administrador crea un bloqueo de cancha
 
-- **GIVEN** an admin creates a block for a court time range
-- **WHEN** users search availability for that range
-- **THEN** the blocked time is not shown as available.
+- **DADO** que un administrador crea un bloqueo para un rango horario de una cancha
+- **CUANDO** los usuarios buscan disponibilidad para ese rango
+- **ENTONCES** el horario bloqueado no se muestra como disponible.
 
-### Requirement: Admin can view and manage reservations
+### Requisito: El administrador puede ver y gestionar reservas
 
-The system SHALL allow admins to view reservations and cancel reservations when needed.
+El sistema DEBE permitir que los administradores vean reservas y cancelen reservas cuando sea necesario.
 
-#### Scenario: Admin cancels reservation
+#### Escenario: El administrador cancela una reserva
 
-- **GIVEN** an admin views a confirmed reservation
-- **WHEN** the admin cancels the reservation
-- **THEN** the reservation status becomes `cancelled_by_admin`
-- **AND** the court time becomes available unless blocked by another rule.
+- **DADO** que un administrador ve una reserva confirmada
+- **CUANDO** el administrador cancela la reserva
+- **ENTONCES** el estado de la reserva pasa a `cancelled_by_admin`
+- **Y** el horario de la cancha queda disponible, salvo que otra regla lo bloquee.
 
-### Requirement: Admin can configure opening hours
+### Requisito: El administrador puede configurar horarios de apertura
 
-The system SHALL allow admins to configure the club opening hours used by availability calculations.
+El sistema DEBE permitir que los administradores configuren los horarios de apertura del club usados por los calculos de disponibilidad.
 
-#### Scenario: User searches outside opening hours
+#### Escenario: El usuario busca fuera del horario de apertura
 
-- **GIVEN** the club is closed for the requested time range
-- **WHEN** a user searches availability
-- **THEN** the system does not show turns outside opening hours.
-
+- **DADO** que el club esta cerrado para el rango horario solicitado
+- **CUANDO** un usuario busca disponibilidad
+- **ENTONCES** el sistema no muestra turnos fuera del horario de apertura.

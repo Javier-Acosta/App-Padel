@@ -3,12 +3,16 @@
 import { revalidatePath } from "next/cache";
 
 import { getAuthToken, requireAdminUser } from "@/lib/auth/session";
-import type { ClubSettings } from "@/lib/domain/reservations";
+import {
+  isReservationStatus,
+  type ClubSettings,
+} from "@/lib/domain/reservations";
 import {
   createCourt,
   createCourtBlock,
   deleteCourtBlock,
   updateCourt,
+  updateReservationStatus,
   upsertClubSettings,
 } from "@/lib/padel/data";
 import { normalizeOpeningHours, clubDayKeys } from "@/lib/padel/opening-hours";
@@ -118,6 +122,20 @@ export async function deleteCourtBlockAction(formData: FormData) {
   const token = await requireAdminToken();
 
   await deleteCourtBlock(token, getString(formData, "id"));
+
+  revalidatePath("/admin");
+  revalidatePath("/reservas");
+}
+
+export async function updateReservationStatusAction(formData: FormData) {
+  const token = await requireAdminToken();
+  const status = getString(formData, "status");
+
+  if (!isReservationStatus(status)) {
+    throw new Error("Invalid reservation status.");
+  }
+
+  await updateReservationStatus(token, getString(formData, "id"), status);
 
   revalidatePath("/admin");
   revalidatePath("/reservas");

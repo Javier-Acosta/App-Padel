@@ -1,15 +1,15 @@
-# Design: Court Reservation MVP
+# Diseno: MVP de reservas de canchas
 
-## Product Model
+## Modelo de producto
 
-The application serves one padel club. All courts belong to that club and share the same base price rules. The system focuses on reserving court time, not on assembling players for matches.
+La aplicacion sirve a un club de padel. Todas las canchas pertenecen a ese club y comparten las mismas reglas base de precio. El sistema se enfoca en reservar horarios de cancha, no en armar grupos de jugadores para partidos.
 
-## Primary Roles
+## Roles principales
 
-- `user`: registered player who can browse availability, create reservations, pay deposits, and cancel eligible reservations.
-- `admin`: club operator who can configure courts, hours, prices, promotions, blocks, and manage reservations.
+- `user`: jugador registrado que puede explorar disponibilidad, crear reservas, pagar senas y cancelar reservas elegibles.
+- `admin`: operador del club que puede configurar canchas, horarios, precios, promociones, bloqueos y administrar reservas.
 
-## Core Entities
+## Entidades principales
 
 ### User
 
@@ -28,7 +28,7 @@ The application serves one padel club. All courts belong to that club and share 
 - `createdAt`
 - `updatedAt`
 
-All courts use the same base pricing configuration for the MVP.
+Todas las canchas usan la misma configuracion base de precios para el MVP.
 
 ### ClubSettings
 
@@ -38,7 +38,7 @@ All courts use the same base pricing configuration for the MVP.
 - `paymentHoldMinutes`
 - `cancellationCutoffHours`
 
-Initial defaults:
+Valores iniciales:
 
 - `paymentHoldMinutes`: 10
 - `cancellationCutoffHours`: 3
@@ -55,7 +55,7 @@ Initial defaults:
 - `priceOverride`
 - `depositOverride`
 
-Promotions are managed by the admin and can affect total price, deposit amount, or both.
+Las promociones son administradas por el administrador y pueden afectar el precio total, el monto de seña o ambos.
 
 ### CourtBlock
 
@@ -66,7 +66,7 @@ Promotions are managed by the admin and can affect total price, deposit amount, 
 - `reason`
 - `createdBy`
 
-Blocks are used for maintenance, private events, weather-related closures, or manual admin holds.
+Los bloqueos se usan para mantenimiento, eventos privados, cierres por clima o retenciones manuales del administrador.
 
 ### Reservation
 
@@ -83,7 +83,7 @@ Blocks are used for maintenance, private events, weather-related closures, or ma
 - `createdAt`
 - `updatedAt`
 
-Reservation statuses:
+Estados de reserva:
 
 - `pending_payment`
 - `confirmed`
@@ -106,87 +106,86 @@ Reservation statuses:
 - `createdAt`
 - `updatedAt`
 
-Payment provider for MVP:
+Proveedor de pago para el MVP:
 
 - `mercadopago`
 
-## Reservation Flow
+## Flujo de reserva
 
 ```text
-User selects duration
-  -> User selects date
-  -> System shows available court slots
-  -> User selects court and start time
-  -> System creates pending_payment reservation
-  -> System creates MercadoPago checkout preference
-  -> User pays deposit
-  -> MercadoPago sends webhook
-  -> System validates payment
-  -> Reservation becomes confirmed
+El usuario selecciona duracion
+  -> El usuario selecciona fecha
+  -> El sistema muestra horarios disponibles por cancha
+  -> El usuario selecciona cancha y hora de inicio
+  -> El sistema crea una reserva pending_payment
+  -> El sistema crea una preferencia de checkout de MercadoPago
+  -> El usuario paga la seña
+  -> MercadoPago envia webhook
+  -> El sistema valida el pago
+  -> La reserva pasa a confirmed
 ```
 
-## Availability Rules
+## Reglas de disponibilidad
 
-A slot is available only when:
+Un horario esta disponible solo cuando:
 
-- The court is active.
-- The requested duration is at least 60 minutes, no more than 900 minutes, and aligned to a 30-minute increment.
-- The requested time range is inside club opening hours.
-- No confirmed reservation overlaps the requested range.
-- No non-expired pending payment reservation overlaps the requested range.
-- No admin block overlaps the requested range.
+- La cancha esta activa.
+- La duracion solicitada es de al menos 60 minutos, no supera los 900 minutos y esta alineada a incrementos de 30 minutos.
+- El rango horario solicitado esta dentro del horario de apertura del club.
+- Ninguna reserva confirmada se superpone con el rango solicitado.
+- Ninguna reserva pendiente de pago no expirada se superpone con el rango solicitado.
+- Ningun bloqueo administrativo se superpone con el rango solicitado.
 
-Availability must be calculated for the full selected duration. For example, a 90 minute reservation must have 90 continuous free minutes.
+La disponibilidad debe calcularse para toda la duracion seleccionada. Por ejemplo, una reserva de 90 minutos debe tener 90 minutos continuos libres.
 
-## Pending Payment Hold
+## Retencion por pago pendiente
 
-When a user starts checkout, the system creates a `pending_payment` reservation with an `expiresAt` timestamp. While pending and not expired, the time range is unavailable to other users.
+Cuando un usuario inicia el checkout, el sistema crea una reserva `pending_payment` con una marca de tiempo `expiresAt`. Mientras este pendiente y no haya expirado, el rango horario no esta disponible para otros usuarios.
 
-If the user does not complete payment before expiration:
+Si el usuario no completa el pago antes de la expiracion:
 
-- the reservation becomes `expired`;
-- the court time becomes available again.
+- la reserva pasa a `expired`;
+- el horario de la cancha vuelve a estar disponible.
 
-If a MercadoPago approved payment arrives after the reservation has expired, the system must not confirm the reservation automatically. The payment should be recorded for admin review.
+Si llega un pago aprobado de MercadoPago despues de que la reserva haya expirado, el sistema no debe confirmar automaticamente la reserva. El pago debe registrarse para revision administrativa.
 
-## Payment Confirmation
+## Confirmacion de pago
 
-The MercadoPago webhook is the source of truth for confirming reservations. Client-side return URLs may show an intermediate result but must not confirm the reservation without webhook validation.
+El webhook de MercadoPago es la fuente de verdad para confirmar reservas. Las URLs de retorno del cliente pueden mostrar un resultado intermedio, pero no deben confirmar la reserva sin validacion del webhook.
 
-Only approved deposit payments confirm reservations.
+Solo los pagos de seña aprobados confirman reservas.
 
-## Cancellation Rules
+## Reglas de cancelacion
 
-Users can cancel confirmed reservations until 3 hours before `startsAt`.
+Los usuarios pueden cancelar reservas confirmadas hasta 3 horas antes de `startsAt`.
 
-On user cancellation:
+Ante una cancelacion del usuario:
 
-- reservation status becomes `cancelled_by_user`;
-- the court time is released;
-- the deposit is not refunded;
-- the payment record remains linked to the cancelled reservation.
+- el estado de la reserva pasa a `cancelled_by_user`;
+- el horario de cancha se libera;
+- la seña no se reembolsa;
+- el registro de pago permanece vinculado a la reserva cancelada.
 
-Admins can cancel reservations regardless of cutoff. Refund handling is out of scope for MVP and remains a manual operational decision.
+Los administradores pueden cancelar reservas sin importar el limite horario. El manejo de reembolsos queda fuera del alcance del MVP y permanece como decision operativa manual.
 
-## Admin Operations
+## Operaciones administrativas
 
-The admin interface should support:
+La interfaz administrativa debe soportar:
 
-- Managing courts.
-- Managing club opening hours.
-- Managing base price and deposit amount.
-- Managing promotions.
-- Creating and removing court blocks.
-- Viewing agenda by day or week.
-- Viewing reservation details and payment status.
-- Cancelling reservations.
+- Administrar canchas.
+- Administrar horarios de apertura del club.
+- Administrar precio base y monto de seña.
+- Administrar promociones.
+- Crear y eliminar bloqueos de cancha.
+- Ver agenda por dia o semana.
+- Ver detalles de reserva y estado de pago.
+- Cancelar reservas.
 
-## Data Integrity
+## Integridad de datos
 
-The system must prevent overlapping active reservations for the same court. Active blocking statuses are:
+El sistema debe evitar reservas activas superpuestas para la misma cancha. Los estados que bloquean disponibilidad son:
 
-- `pending_payment` when not expired
+- `pending_payment` cuando no esta expirada
 - `confirmed`
 
-Implementation should enforce overlap prevention server-side during reservation creation and confirmation.
-
+La implementacion debe hacer cumplir la prevencion de superposiciones del lado servidor durante la creacion y confirmacion de reservas.

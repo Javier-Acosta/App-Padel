@@ -1,64 +1,63 @@
-# Payments Spec
+# Especificacion de pagos
 
-## ADDED Requirements
+## Requisitos agregados
 
-### Requirement: Reservations require MercadoPago deposit payment
+### Requisito: Las reservas requieren pago de seña con MercadoPago
 
-The system SHALL require a MercadoPago deposit payment before confirming a reservation.
+El sistema DEBE requerir un pago de seña con MercadoPago antes de confirmar una reserva.
 
-#### Scenario: User starts payment
+#### Escenario: El usuario inicia el pago
 
-- **GIVEN** a reservation is `pending_payment`
-- **WHEN** the user proceeds to payment
-- **THEN** the system creates a MercadoPago checkout preference for the reservation deposit
-- **AND** stores the provider preference metadata.
+- **DADO** que una reserva esta en estado `pending_payment`
+- **CUANDO** el usuario avanza al pago
+- **ENTONCES** el sistema crea una preferencia de checkout de MercadoPago para la seña de la reserva
+- **Y** guarda los metadatos de preferencia del proveedor.
 
-### Requirement: Approved webhook confirms reservation
+### Requisito: El webhook aprobado confirma la reserva
 
-The system SHALL confirm reservations only after receiving and validating an approved MercadoPago payment webhook.
+El sistema DEBE confirmar reservas solo despues de recibir y validar un webhook de pago aprobado de MercadoPago.
 
-#### Scenario: MercadoPago approves payment
+#### Escenario: MercadoPago aprueba el pago
 
-- **GIVEN** a reservation is `pending_payment`
-- **AND** MercadoPago sends an approved payment webhook for the reservation deposit
-- **WHEN** the system validates the webhook event
-- **THEN** the payment status is recorded as approved
-- **AND** the reservation status becomes `confirmed`.
+- **DADO** que una reserva esta en estado `pending_payment`
+- **Y** MercadoPago envia un webhook de pago aprobado para la seña de la reserva
+- **CUANDO** el sistema valida el evento de webhook
+- **ENTONCES** el estado del pago se registra como aprobado
+- **Y** el estado de la reserva pasa a `confirmed`.
 
-### Requirement: Client checkout return does not confirm reservation
+### Requisito: El retorno del checkout del cliente no confirma la reserva
 
-The system SHALL NOT confirm a reservation solely from a client-side checkout return.
+El sistema NO DEBE confirmar una reserva solamente por un retorno del checkout del lado cliente.
 
-#### Scenario: User returns from checkout before webhook processing
+#### Escenario: El usuario vuelve del checkout antes de procesar el webhook
 
-- **GIVEN** a user returns from MercadoPago checkout
-- **AND** the approval webhook has not been processed
-- **WHEN** the reservation page is displayed
-- **THEN** the system shows the current reservation status
-- **AND** does not mark the reservation as confirmed from the return URL alone.
+- **DADO** que un usuario vuelve del checkout de MercadoPago
+- **Y** el webhook de aprobacion todavia no fue procesado
+- **CUANDO** se muestra la pagina de reservas
+- **ENTONCES** el sistema muestra el estado actual de la reserva
+- **Y** no marca la reserva como confirmada a partir de la URL de retorno solamente.
 
-### Requirement: User cancellation does not refund deposit
+### Requisito: La cancelacion del usuario no reembolsa la seña
 
-The system SHALL retain the paid deposit when a user cancels a confirmed reservation.
+El sistema DEBE retener la seña pagada cuando un usuario cancela una reserva confirmada.
 
-#### Scenario: User cancels a paid reservation
+#### Escenario: El usuario cancela una reserva pagada
 
-- **GIVEN** a reservation is `confirmed`
-- **AND** the linked deposit payment is approved
-- **WHEN** the user cancels before the cancellation cutoff
-- **THEN** the reservation becomes `cancelled_by_user`
-- **AND** the payment remains recorded as approved
-- **AND** no automatic refund is created.
+- **DADO** que una reserva esta en estado `confirmed`
+- **Y** el pago de seña vinculado esta aprobado
+- **CUANDO** el usuario cancela antes del limite de cancelacion
+- **ENTONCES** la reserva pasa a `cancelled_by_user`
+- **Y** el pago permanece registrado como aprobado
+- **Y** no se crea ningun reembolso automatico.
 
-### Requirement: Late approved payments require review
+### Requisito: Los pagos aprobados tarde requieren revision
 
-The system SHALL NOT automatically confirm an expired reservation when an approved payment arrives after expiration.
+El sistema NO DEBE confirmar automaticamente una reserva expirada cuando llega un pago aprobado despues de la expiracion.
 
-#### Scenario: Payment arrives after reservation expiration
+#### Escenario: El pago llega despues de la expiracion de la reserva
 
-- **GIVEN** a reservation is `expired`
-- **WHEN** an approved MercadoPago webhook arrives for that reservation
-- **THEN** the system records the payment event
-- **AND** does not mark the reservation as `confirmed`
-- **AND** makes the event available for admin review.
-
+- **DADO** que una reserva esta en estado `expired`
+- **CUANDO** llega un webhook aprobado de MercadoPago para esa reserva
+- **ENTONCES** el sistema registra el evento de pago
+- **Y** no marca la reserva como `confirmed`
+- **Y** deja el evento disponible para revision administrativa.

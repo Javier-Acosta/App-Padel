@@ -3,8 +3,13 @@ import { redirect } from "next/navigation";
 
 import { LogoutButton } from "@/app/components/logout-button";
 import { ReservationPicker } from "@/app/components/reservation-picker";
+import { UpcomingReservations } from "@/app/components/upcoming-reservations";
 import { getAuthToken, getCurrentUser } from "@/lib/auth/session";
-import { getActiveCourts, getClubSettings } from "@/lib/padel/data";
+import {
+  getActiveCourts,
+  getClubSettings,
+  getUpcomingReservationsForUser,
+} from "@/lib/padel/data";
 
 export default async function ReservationsPage() {
   const [user, token] = await Promise.all([getCurrentUser(), getAuthToken()]);
@@ -13,9 +18,10 @@ export default async function ReservationsPage() {
     redirect("/login");
   }
 
-  const [courts, settings] = await Promise.all([
+  const [courts, settings, reservations] = await Promise.all([
     getActiveCourts(token),
     getClubSettings(token),
+    getUpcomingReservationsForUser(token, user.id),
   ]);
 
   return (
@@ -74,6 +80,12 @@ export default async function ReservationsPage() {
             </div>
           ))}
         </section>
+
+        <UpcomingReservations
+          reservations={reservations}
+          courts={courts}
+          cancellationCutoffHours={settings?.cancellationCutoffHours ?? 3}
+        />
 
         <ReservationPicker courts={courts} settings={settings} />
       </div>

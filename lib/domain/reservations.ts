@@ -161,7 +161,10 @@ export function canUserCancelReservation(
   now = new Date(),
   cutoffHours = 3,
 ) {
-  if (reservation.status !== "confirmed") {
+  if (
+    reservation.status !== "confirmed" &&
+    reservation.status !== "pending_payment"
+  ) {
     return false;
   }
 

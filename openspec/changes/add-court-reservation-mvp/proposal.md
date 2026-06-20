@@ -1,42 +1,41 @@
-# Add Court Reservation MVP
+# Agregar MVP de reservas de canchas
 
-## Summary
+## Resumen
 
-Build the first MVP for a single-club padel court reservation application. Registered users can browse available court times in a calendar, choose a turn of at least 60 minutes in 30-minute increments, pay a non-refundable deposit through MercadoPago, and receive an automatically confirmed reservation when payment is approved.
+Construir el primer MVP para una aplicacion de reservas de canchas de padel de un solo club. Los usuarios registrados pueden explorar horarios disponibles en un calendario, elegir un turno de al menos 60 minutos en incrementos de 30 minutos, pagar una seña no reembolsable mediante MercadoPago y recibir una reserva confirmada automaticamente cuando el pago sea aprobado.
 
-## Motivation
+## Motivacion
 
-The club needs a digital reservation flow that reduces manual coordination, prevents double-booking, and gives players a clear way to secure court time. MercadoPago deposit payment ensures commitment before the reservation is confirmed while keeping the remaining balance payable at the club.
+El club necesita un flujo digital de reservas que reduzca la coordinacion manual, evite reservas superpuestas y les de a los jugadores una forma clara de asegurar un turno de cancha. El pago de seña con MercadoPago garantiza compromiso antes de confirmar la reserva, manteniendo el saldo restante pagadero en el club.
 
-## Scope
+## Alcance
 
-- User registration and authenticated reservation flow.
-- Calendar-based court availability for a single club.
-- Multiple courts with the same base pricing rules.
-- Turn durations of at least 60 minutes in 30-minute increments.
-- Temporary reservation hold while payment is pending.
-- MercadoPago checkout for deposit payment.
-- MercadoPago webhook handling for payment confirmation.
-- Automatic reservation confirmation after approved payment.
-- User cancellation up to 3 hours before start time.
-- Non-refundable deposit on user cancellation.
-- Admin management for courts, opening hours, base price, deposit amount, promotions, blocks, and reservations.
+- Registro de usuarios y flujo de reservas autenticado.
+- Disponibilidad de canchas basada en calendario para un solo club.
+- Multiples canchas con las mismas reglas base de precio.
+- Duraciones de turno de al menos 60 minutos en incrementos de 30 minutos.
+- Retencion temporal de la reserva mientras el pago esta pendiente.
+- Checkout de MercadoPago para el pago de seña.
+- Manejo de webhooks de MercadoPago para confirmacion de pago.
+- Confirmacion automatica de la reserva luego de un pago aprobado.
+- Cancelacion por parte del usuario hasta 3 horas antes del inicio.
+- Seña no reembolsable ante cancelacion del usuario.
+- Gestion administrativa de canchas, horarios de apertura, precio base, monto de seña, promociones, bloqueos y reservas.
 
-## Out of Scope
+## Fuera de alcance
 
-- Multi-club marketplace behavior.
-- Full online payment of the court price.
-- Automatic refund processing.
-- Player matching or social match creation.
-- Competitive ranking and tournaments.
-- Native mobile apps.
+- Comportamiento de marketplace multiclub.
+- Pago online completo del precio de la cancha.
+- Procesamiento automatico de reembolsos.
+- Emparejamiento de jugadores o creacion social de partidos.
+- Ranking competitivo y torneos.
+- Aplicaciones moviles nativas.
 
-## Success Criteria
+## Criterios de exito
 
-- A registered user can reserve an available court time and pay the deposit online.
-- A reservation is not confirmed until MercadoPago reports an approved payment.
-- A pending payment hold expires and releases availability if payment is not completed in time.
-- A confirmed reservation blocks the court time for all users.
-- A user can cancel a confirmed reservation more than 3 hours before the start time, releasing the court without refunding the deposit.
-- An admin can configure the operational data needed for the club to use the reservation system.
-
+- Un usuario registrado puede reservar un horario disponible y pagar la seña online.
+- Una reserva no se confirma hasta que MercadoPago informe un pago aprobado.
+- Una retencion pendiente de pago expira y libera la disponibilidad si el pago no se completa a tiempo.
+- Una reserva confirmada bloquea el horario de la cancha para todos los usuarios.
+- Un usuario puede cancelar una reserva confirmada mas de 3 horas antes del inicio, liberando la cancha sin reembolsar la seña.
+- Un administrador puede configurar los datos operativos necesarios para que el club use el sistema de reservas.

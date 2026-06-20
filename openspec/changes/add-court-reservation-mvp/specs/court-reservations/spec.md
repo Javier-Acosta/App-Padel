@@ -1,98 +1,97 @@
-# Court Reservations Spec
+# Especificacion de reservas de canchas
 
-## ADDED Requirements
+## Requisitos agregados
 
-### Requirement: Registered users can reserve available court turns
+### Requisito: Los usuarios registrados pueden reservar turnos disponibles
 
-The system SHALL allow registered users to create court reservations for available turns in a single club.
+El sistema DEBE permitir que los usuarios registrados creen reservas de cancha para turnos disponibles en un solo club.
 
-#### Scenario: User creates a pending reservation
+#### Escenario: El usuario crea una reserva pendiente
 
-- **GIVEN** a registered user is authenticated
-- **AND** an active court has availability for the selected time range
-- **WHEN** the user selects a date, court, start time, and valid duration
-- **THEN** the system creates a reservation with status `pending_payment`
-- **AND** the selected court time is temporarily unavailable to other users.
+- **DADO** que un usuario registrado esta autenticado
+- **Y** una cancha activa tiene disponibilidad para el rango horario seleccionado
+- **CUANDO** el usuario selecciona fecha, cancha, hora de inicio y una duracion valida
+- **ENTONCES** el sistema crea una reserva con estado `pending_payment`
+- **Y** el horario seleccionado de la cancha queda temporalmente no disponible para otros usuarios.
 
-### Requirement: Supported turn durations are fixed
+### Requisito: Las duraciones de turno soportadas son fijas
 
-The system SHALL only allow reservation durations from 60 to 900 minutes in 30-minute increments.
+El sistema DEBE permitir solo duraciones de reserva de 60 a 900 minutos en incrementos de 30 minutos.
 
-#### Scenario: User selects a supported duration
+#### Escenario: El usuario selecciona una duracion soportada
 
-- **GIVEN** a user is creating a reservation
-- **WHEN** the user selects a duration from 60 to 900 minutes in 30-minute increments
-- **THEN** the system accepts the duration.
+- **DADO** que un usuario esta creando una reserva
+- **CUANDO** selecciona una duracion entre 60 y 900 minutos en incrementos de 30 minutos
+- **ENTONCES** el sistema acepta la duracion.
 
-#### Scenario: User selects an unsupported duration
+#### Escenario: El usuario selecciona una duracion no soportada
 
-- **GIVEN** a user is creating a reservation
-- **WHEN** the user selects a duration shorter than 60 minutes, longer than 900 minutes, or not aligned to a 30-minute increment
-- **THEN** the system rejects the reservation request.
+- **DADO** que un usuario esta creando una reserva
+- **CUANDO** selecciona una duracion menor a 60 minutos, mayor a 900 minutos o no alineada a incrementos de 30 minutos
+- **ENTONCES** el sistema rechaza la solicitud de reserva.
 
-### Requirement: Availability is calculated for the full duration
+### Requisito: La disponibilidad se calcula para la duracion completa
 
-The system SHALL only show a turn as available when the full requested duration is free for a court.
+El sistema DEBE mostrar un turno como disponible solo cuando la duracion completa solicitada esta libre para una cancha.
 
-#### Scenario: Full duration is available
+#### Escenario: La duracion completa esta disponible
 
-- **GIVEN** a court has no overlapping reservation or block for the requested range
-- **AND** the requested range is inside club opening hours
-- **WHEN** the user searches availability
-- **THEN** the system shows the turn as available.
+- **DADO** que una cancha no tiene reservas ni bloqueos superpuestos para el rango solicitado
+- **Y** el rango solicitado esta dentro del horario de apertura del club
+- **CUANDO** el usuario busca disponibilidad
+- **ENTONCES** el sistema muestra el turno como disponible.
 
-#### Scenario: Only part of the duration is available
+#### Escenario: Solo una parte de la duracion esta disponible
 
-- **GIVEN** a court has an overlapping reservation or block within the requested duration
-- **WHEN** the user searches availability
-- **THEN** the system does not show the turn as available.
+- **DADO** que una cancha tiene una reserva o bloqueo superpuesto dentro de la duracion solicitada
+- **CUANDO** el usuario busca disponibilidad
+- **ENTONCES** el sistema no muestra el turno como disponible.
 
-### Requirement: Pending reservations expire
+### Requisito: Las reservas pendientes expiran
 
-The system SHALL expire pending payment reservations that are not paid before their expiration time.
+El sistema DEBE expirar las reservas pendientes de pago que no se paguen antes de su hora de expiracion.
 
-#### Scenario: Pending reservation expires
+#### Escenario: La reserva pendiente expira
 
-- **GIVEN** a reservation is `pending_payment`
-- **AND** its expiration time has passed
-- **WHEN** the system evaluates reservation status
-- **THEN** the reservation becomes `expired`
-- **AND** the court time becomes available again.
+- **DADO** que una reserva esta en estado `pending_payment`
+- **Y** su hora de expiracion ya paso
+- **CUANDO** el sistema evalua el estado de la reserva
+- **ENTONCES** la reserva pasa a `expired`
+- **Y** el horario de la cancha vuelve a estar disponible.
 
-### Requirement: Confirmed and active pending reservations block availability
+### Requisito: Las reservas confirmadas y pendientes activas bloquean disponibilidad
 
-The system SHALL treat confirmed reservations and non-expired pending payment reservations as unavailable time.
+El sistema DEBE tratar las reservas confirmadas y las reservas pendientes de pago no expiradas como horario no disponible.
 
-#### Scenario: Another user searches a held time
+#### Escenario: Otro usuario busca un horario retenido
 
-- **GIVEN** a reservation is `pending_payment`
-- **AND** the reservation has not expired
-- **WHEN** another user searches overlapping availability
-- **THEN** the overlapping court time is not shown as available.
+- **DADO** que una reserva esta en estado `pending_payment`
+- **Y** la reserva no expiro
+- **CUANDO** otro usuario busca disponibilidad superpuesta
+- **ENTONCES** el horario superpuesto de la cancha no se muestra como disponible.
 
-#### Scenario: Another user searches a confirmed time
+#### Escenario: Otro usuario busca un horario confirmado
 
-- **GIVEN** a reservation is `confirmed`
-- **WHEN** another user searches overlapping availability
-- **THEN** the overlapping court time is not shown as available.
+- **DADO** que una reserva esta en estado `confirmed`
+- **CUANDO** otro usuario busca disponibilidad superpuesta
+- **ENTONCES** el horario superpuesto de la cancha no se muestra como disponible.
 
-### Requirement: Users can cancel eligible reservations
+### Requisito: Los usuarios pueden cancelar reservas elegibles
 
-The system SHALL allow users to cancel confirmed reservations until 3 hours before the reservation start time.
+El sistema DEBE permitir que los usuarios cancelen reservas confirmadas hasta 3 horas antes del inicio de la reserva.
 
-#### Scenario: User cancels before cutoff
+#### Escenario: El usuario cancela antes del limite
 
-- **GIVEN** a user has a confirmed reservation
-- **AND** the reservation starts more than 3 hours from now
-- **WHEN** the user cancels the reservation
-- **THEN** the reservation status becomes `cancelled_by_user`
-- **AND** the court time becomes available
-- **AND** the deposit is not refunded.
+- **DADO** que un usuario tiene una reserva confirmada
+- **Y** la reserva empieza en mas de 3 horas
+- **CUANDO** el usuario cancela la reserva
+- **ENTONCES** el estado de la reserva pasa a `cancelled_by_user`
+- **Y** el horario de la cancha queda disponible
+- **Y** la seña no se reembolsa.
 
-#### Scenario: User tries to cancel after cutoff
+#### Escenario: El usuario intenta cancelar despues del limite
 
-- **GIVEN** a user has a confirmed reservation
-- **AND** the reservation starts in 3 hours or less
-- **WHEN** the user tries to cancel the reservation
-- **THEN** the system rejects the cancellation.
-
+- **DADO** que un usuario tiene una reserva confirmada
+- **Y** la reserva empieza en 3 horas o menos
+- **CUANDO** el usuario intenta cancelar la reserva
+- **ENTONCES** el sistema rechaza la cancelacion.
