@@ -6,12 +6,16 @@ import { getAuthToken, requireAdminUser } from "@/lib/auth/session";
 import {
   isReservationStatus,
   type ClubSettings,
+  type Promotion,
 } from "@/lib/domain/reservations";
 import {
   createCourt,
   createCourtBlock,
+  createPromotion,
   deleteCourtBlock,
+  deletePromotion,
   updateCourt,
+  updatePromotion,
   updateReservationStatus,
   upsertClubSettings,
 } from "@/lib/padel/data";
@@ -35,6 +39,56 @@ function getNumber(formData: FormData, key: string) {
   }
 
   return value;
+}
+
+function getOptionalNumber(formData: FormData, key: string) {
+  const value = formData.get(key);
+
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return undefined;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+    throw new Error(`${key} must be a positive number.`);
+  }
+
+  return parsedValue;
+}
+
+function getPromotionInput(formData: FormData): Omit<Promotion, "id"> {
+  const daysOfWeek = formData
+    .getAll("daysOfWeek")
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6);
+  const timeStartsAt = formData.get("timeRange.startsAt");
+  const timeEndsAt = formData.get("timeRange.endsAt");
+
+  if (daysOfWeek.length === 0) {
+    throw new Error("At least one day is required.");
+  }
+
+  return {
+    name: getString(formData, "name"),
+    active: formData.get("active") === "on",
+    startsAt: new Date(`${getString(formData, "startsAt")}T00:00:00`).toISOString(),
+    endsAt: new Date(`${getString(formData, "endsAt")}T23:59:59`).toISOString(),
+    daysOfWeek,
+    ...(typeof timeStartsAt === "string" &&
+    timeStartsAt.length > 0 &&
+    typeof timeEndsAt === "string" &&
+    timeEndsAt.length > 0
+      ? {
+          timeRange: {
+            startsAt: timeStartsAt,
+            endsAt: timeEndsAt,
+          },
+        }
+      : {}),
+    priceOverride: getOptionalNumber(formData, "priceOverride"),
+    depositOverride: getOptionalNumber(formData, "depositOverride"),
+  };
 }
 
 async function requireAdminToken() {
@@ -94,6 +148,37 @@ export async function updateSettingsAction(formData: FormData) {
     paymentHoldMinutes: getNumber(formData, "paymentHoldMinutes"),
     cancellationCutoffHours: getNumber(formData, "cancellationCutoffHours"),
   });
+
+  revalidatePath("/admin");
+  revalidatePath("/reservas");
+}
+
+export async function createPromotionAction(formData: FormData) {
+  const token = await requireAdminToken();
+
+  await createPromotion(token, getPromotionInput(formData));
+
+  revalidatePath("/admin");
+  revalidatePath("/reservas");
+}
+
+export async function updatePromotionAction(formData: FormData) {
+  const token = await requireAdminToken();
+
+  await updatePromotion(
+    token,
+    getString(formData, "id"),
+    getPromotionInput(formData),
+  );
+
+  revalidatePath("/admin");
+  revalidatePath("/reservas");
+}
+
+export async function deletePromotionAction(formData: FormData) {
+  const token = await requireAdminToken();
+
+  await deletePromotion(token, getString(formData, "id"));
 
   revalidatePath("/admin");
   revalidatePath("/reservas");

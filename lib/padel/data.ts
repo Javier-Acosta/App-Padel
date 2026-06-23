@@ -3,6 +3,7 @@ import type {
   Court,
   CourtBlock,
   Payment,
+  Promotion,
   Reservation,
   ReservationStatus,
   TurnDuration,
@@ -60,6 +61,18 @@ type PocketBaseCourtBlockRecord = {
   endsAt: string;
   reason: string;
   createdBy: string;
+};
+
+type PocketBasePromotionRecord = {
+  id: string;
+  name: string;
+  active: boolean;
+  startsAt: string;
+  endsAt: string;
+  daysOfWeek: number[];
+  timeRange?: Promotion["timeRange"];
+  priceOverride?: number;
+  depositOverride?: number;
 };
 
 type PocketBaseUserRecord = {
@@ -121,6 +134,20 @@ function mapCourtBlock(record: PocketBaseCourtBlockRecord): CourtBlock {
     endsAt: record.endsAt,
     reason: record.reason,
     createdBy: record.createdBy,
+  };
+}
+
+function mapPromotion(record: PocketBasePromotionRecord): Promotion {
+  return {
+    id: record.id,
+    name: record.name,
+    active: record.active,
+    startsAt: record.startsAt,
+    endsAt: record.endsAt,
+    daysOfWeek: record.daysOfWeek,
+    timeRange: record.timeRange,
+    priceOverride: record.priceOverride,
+    depositOverride: record.depositOverride,
   };
 }
 
@@ -451,6 +478,75 @@ export async function getUserProfilesByIds(token: string, userIds: string[]) {
   return result.items.map(mapUserProfile);
 }
 
+export async function getPromotions(token: string) {
+  const result = await listPocketBaseRecords<PocketBasePromotionRecord>(
+    "promotions",
+    {
+      token,
+      searchParams: {
+        page: 1,
+        perPage: 100,
+        sort: "-active,startsAt",
+      },
+    },
+  );
+
+  return result.items.map(mapPromotion);
+}
+
+export async function getActivePromotionsForRange(
+  token: string,
+  startsAt: string,
+  endsAt: string,
+) {
+  const result = await listPocketBaseRecords<PocketBasePromotionRecord>(
+    "promotions",
+    {
+      token,
+      searchParams: {
+        page: 1,
+        perPage: 100,
+        filter: `active = true && startsAt <= "${endsAt}" && endsAt >= "${startsAt}"`,
+        sort: "startsAt",
+      },
+    },
+  );
+
+  return result.items.map(mapPromotion);
+}
+
+export async function createPromotion(
+  token: string,
+  input: Omit<Promotion, "id">,
+) {
+  const record = await createPocketBaseRecord<PocketBasePromotionRecord>(
+    "promotions",
+    input,
+    { token },
+  );
+
+  return mapPromotion(record);
+}
+
+export async function updatePromotion(
+  token: string,
+  id: string,
+  input: Omit<Promotion, "id">,
+) {
+  const record = await updatePocketBaseRecord<PocketBasePromotionRecord>(
+    "promotions",
+    id,
+    input,
+    { token },
+  );
+
+  return mapPromotion(record);
+}
+
+export async function deletePromotion(token: string, id: string) {
+  await deletePocketBaseRecord("promotions", id, { token });
+}
+
 export async function getCourtBlocksForRange(
   token: string,
   startsAt: string,
@@ -565,12 +661,18 @@ export async function updateReservationSchedule(
     reservationDate: string;
     startsAt: string;
     endsAt: string;
+    durationMinutes: TurnDuration;
+    totalPrice: number;
+    depositAmount: number;
   },
 ) {
   const record = await updatePocketBaseRecord<PocketBaseReservationRecord>(
     "reservations",
     id,
-    input,
+    {
+      ...input,
+      durationMinutes: String(input.durationMinutes),
+    },
     { token },
   );
 

@@ -10,10 +10,12 @@ import {
 import {
   createPendingReservation,
   getActiveCourts,
+  getActivePromotionsForRange,
   getClubSettings,
   getCourtBlocksForRange,
   getReservationsForDate,
 } from "@/lib/padel/data";
+import { calculateReservationPrice } from "@/lib/padel/pricing";
 
 function parseReservationDate(value: unknown) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -60,11 +62,12 @@ export async function POST(request: Request) {
     );
     const date = input.date;
     const range = getDateRange(date);
-    const [courts, settings, reservations, blocks] = await Promise.all([
+    const [courts, settings, reservations, blocks, promotions] = await Promise.all([
       getActiveCourts(token),
       getClubSettings(token),
       getReservationsForDate(token, date, range.startsAt, range.endsAt),
       getCourtBlocksForRange(token, range.startsAt, range.endsAt),
+      getActivePromotionsForRange(token, range.startsAt, range.endsAt),
     ]);
 
     if (!settings) {
@@ -95,6 +98,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const price = calculateReservationPrice({
+      startsAt,
+      endsAt,
+      durationMinutes: input.durationMinutes,
+      settings,
+      promotions,
+    });
+
     const reservation = await createPendingReservation(token, {
       userId: user.id,
       courtId: input.courtId,
@@ -102,8 +113,8 @@ export async function POST(request: Request) {
       startsAt: startsAt.toISOString(),
       endsAt: endsAt.toISOString(),
       durationMinutes: input.durationMinutes,
-      totalPrice: settings.basePrice * (input.durationMinutes / 60),
-      depositAmount: settings.depositAmount,
+      totalPrice: price.totalPrice,
+      depositAmount: price.depositAmount,
       expiresAt: new Date(
         Date.now() + settings.paymentHoldMinutes * 60 * 1000,
       ).toISOString(),

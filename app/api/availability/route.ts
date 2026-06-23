@@ -32,6 +32,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const date = parseDateSearchParam(url.searchParams.get("date"));
     const duration = parseDurationSearchParam(url.searchParams.get("duration"));
+    const excludeReservationId = url.searchParams.get("excludeReservationId");
     const range = getDateRange(date);
     const [courts, settings, reservations, blocks] = await Promise.all([
       getActiveCourts(token),
@@ -52,7 +53,13 @@ export async function GET(request: Request) {
       durationMinutes: duration,
       courts,
       settings,
-      reservations,
+      reservations: excludeReservationId
+        ? reservations.filter(
+            (reservation) =>
+              reservation.id !== excludeReservationId ||
+              reservation.userId !== user.id,
+          )
+        : reservations,
       blocks,
     });
 

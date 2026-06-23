@@ -50,8 +50,8 @@ export default async function ReservationsPage() {
           </p>
           <h1 className="mt-3 text-3xl font-semibold">Hola, {user.name}</h1>
           <p className="mt-3 max-w-2xl text-[#526158]">
-            Elegi una fecha, cuantas horas queres jugar y revisa las canchas
-            disponibles del club.
+            Elegi fecha, cancha y horario en un flujo simple. La reserva queda
+            pendiente hasta completar la sena online.
           </p>
           {user.role === "admin" ? (
             <Link
@@ -67,7 +67,7 @@ export default async function ReservationsPage() {
           {[
             ["Duraciones", "De 1 a 15 horas"],
             ["Pago", `Sena online de $${settings?.depositAmount ?? 0}`],
-            ["Horario", "Todos los dias de 8:00 a 23:00"],
+            ["Seleccion", "Inicio y fin en bloques de 30 minutos"],
           ].map(([title, value]) => (
             <div
               key={title}

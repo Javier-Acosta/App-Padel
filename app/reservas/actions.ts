@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getAuthToken, getCurrentUser } from "@/lib/auth/session";
-import { canUserCancelReservation } from "@/lib/domain/reservations";
+import {
+  assertTurnDuration,
+  canUserCancelReservation,
+} from "@/lib/domain/reservations";
 import { createReservationDepositPreference } from "@/lib/payments/mercadopago";
 import { authenticatePocketBaseAdmin } from "@/lib/pocketbase/client";
 import {
@@ -14,6 +17,7 @@ import {
 } from "@/lib/padel/availability";
 import {
   getActiveCourts,
+  getActivePromotionsForRange,
   getClubSettings,
   getCourtBlocksForRange,
   getPaymentForReservation,
@@ -24,6 +28,7 @@ import {
   updateReservationStatus,
   updatePayment,
 } from "@/lib/padel/data";
+import { calculateReservationPrice } from "@/lib/padel/pricing";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -80,6 +85,9 @@ export async function rescheduleReservationAction(formData: FormData) {
   const courtId = getString(formData, "courtId");
   const date = getString(formData, "date");
   const startsAtValue = getString(formData, "startsAt");
+  const durationMinutes = assertTurnDuration(
+    Number(getString(formData, "durationMinutes")),
+  );
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     throw new Error("date must use YYYY-MM-DD format.");
@@ -117,17 +125,18 @@ export async function rescheduleReservationAction(formData: FormData) {
     throw new Error("startsAt must be a valid date.");
   }
   const endsAt = new Date(
-    startsAt.getTime() + reservation.durationMinutes * 60 * 1000,
+    startsAt.getTime() + durationMinutes * 60 * 1000,
   );
   const range = getDateRange(date);
-  const [courts, reservations, blocks] = await Promise.all([
+  const [courts, reservations, blocks, promotions] = await Promise.all([
     getActiveCourts(token),
     getReservationsForDate(token, date, range.startsAt, range.endsAt),
     getCourtBlocksForRange(token, range.startsAt, range.endsAt),
+    getActivePromotionsForRange(token, range.startsAt, range.endsAt),
   ]);
   const availableSlots = calculateAvailability({
     date,
-    durationMinutes: reservation.durationMinutes,
+    durationMinutes,
     courts,
     settings,
     reservations: reservations.filter((item) => item.id !== reservation.id),
@@ -143,11 +152,22 @@ export async function rescheduleReservationAction(formData: FormData) {
     throw new Error("That slot is no longer available.");
   }
 
+  const price = calculateReservationPrice({
+    startsAt,
+    endsAt,
+    durationMinutes,
+    settings,
+    promotions,
+  });
+
   await updateReservationSchedule(token, reservation.id, {
     courtId,
     reservationDate: date,
     startsAt: startsAt.toISOString(),
     endsAt: endsAt.toISOString(),
+    durationMinutes,
+    totalPrice: price.totalPrice,
+    depositAmount: price.depositAmount,
   });
 
   revalidatePath("/reservas");

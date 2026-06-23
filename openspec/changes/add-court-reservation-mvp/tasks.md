@@ -44,7 +44,7 @@
 - [ ] Agregar administracion de canchas.
 - [ ] Agregar configuracion de horarios de apertura.
 - [ ] Agregar configuracion de precio base y seña.
-- [ ] Agregar administracion de promociones.
+- [x] Agregar administracion de promociones.
 - [ ] Agregar administracion de bloqueos de cancha.
 - [ ] Agregar detalle de reserva y cancelacion administrativa.
 
