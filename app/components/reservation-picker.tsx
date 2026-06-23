@@ -37,8 +37,39 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatDuration(minutes: number) {
+  if (minutes <= 0) {
+    return "Pendiente";
+  }
+
+  const hours = minutes / 60;
+
+  return `${hours} ${hours === 1 ? "hora" : "horas"}`;
+}
+
 function getTodayValue() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function addDaysToDateValue(value: string, days: number) {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() + days);
+
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDayChip(value: string) {
+  const date = new Date(`${value}T12:00:00`);
+
+  return {
+    weekday: new Intl.DateTimeFormat("es-AR", {
+      weekday: "short",
+    }).format(date),
+    day: new Intl.DateTimeFormat("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+    }).format(date),
+  };
 }
 
 function doSlotsOverlap(
@@ -128,12 +159,32 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
     }).format(new Date(`${date}T12:00:00`));
   }, [date]);
 
+  const quickDates = useMemo(() => {
+    const today = getTodayValue();
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const value = addDaysToDateValue(today, index);
+
+      return {
+        value,
+        ...formatDayChip(value),
+      };
+    });
+  }, []);
+
   const slotsByCourt = useMemo(() => {
-    return courts.map((court) => ({
-      court,
-      slots: slots.filter((slot) => slot.courtId === court.id),
-    }));
+    return courts.map((court) => {
+      const courtSlots = slots.filter((slot) => slot.courtId === court.id);
+
+      return {
+        court,
+        slots: courtSlots,
+        timeButtons: getTimeButtons(courtSlots),
+      };
+    });
   }, [courts, slots]);
+
+  const allTimeButtons = useMemo(() => getTimeButtons(slots), [slots]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -188,6 +239,12 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
     : 0;
   const selectedHours = durationMinutes / 60;
   const estimatedPrice = (settings?.basePrice ?? 0) * selectedHours;
+  const hasCompleteSelection = Boolean(selectedRange?.endsAt);
+  const selectedTimeLabel = selectedRange
+    ? selectedRange.endsAt
+      ? `${formatTime(selectedRange.startsAt)} a ${formatTime(selectedRange.endsAt)}`
+      : `${formatTime(selectedRange.startsAt)} - elegi fin`
+    : "Sin seleccionar";
 
   function selectTime(
     court: Court,
@@ -197,10 +254,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
     setError(null);
     setReservationNotice(null);
 
-    if (
-      !selectedRange ||
-      selectedRange.courtId !== court.id
-    ) {
+    if (!selectedRange || selectedRange.courtId !== court.id) {
       setSelectedRange({
         courtId: court.id,
         courtName: court.name,
@@ -226,7 +280,9 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
       const endsAt = clickedMs < startMs ? selectedRange.startsAt : time;
 
       if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
-        setError("Elegí un rango de al menos 1 hora en bloques de 30 minutos disponibles.");
+        setError(
+          "Elegi un rango de al menos 1 hora en bloques de 30 minutos disponibles.",
+        );
         setSelectedRange({
           courtId: court.id,
           courtName: court.name,
@@ -255,7 +311,9 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
     const endsAt = clickedMs < startMs ? selectedRange.startsAt : time;
 
     if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
-      setError("Elegí un rango de al menos 1 hora en bloques de 30 minutos disponibles.");
+      setError(
+        "Elegi un rango de al menos 1 hora en bloques de 30 minutos disponibles.",
+      );
       setSelectedRange({
         courtId: court.id,
         courtName: court.name,
@@ -326,9 +384,22 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
   }
 
   return (
-    <section className="mt-8 grid gap-6 lg:grid-cols-[360px_1fr]">
-      <div className="rounded-lg border border-[#d9ded5] bg-white p-5 shadow-sm">
-        <h2 className="text-xl font-semibold text-[#26382f]">Buscar turno</h2>
+    <section className="mt-8 grid gap-6 lg:grid-cols-[340px_1fr]">
+      <aside className="self-start rounded-lg border border-[#d9ded5] bg-white p-5 shadow-sm lg:sticky lg:top-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7b3f28]">
+              Paso 1
+            </p>
+            <h2 className="mt-2 text-xl font-semibold text-[#26382f]">
+              Armar reserva
+            </h2>
+          </div>
+          <span className="rounded-md bg-[#edf4ef] px-3 py-2 text-sm font-semibold text-[#164b35]">
+            {hasCompleteSelection ? "Lista" : "En curso"}
+          </span>
+        </div>
+
         <div className="mt-5 grid gap-4">
           <label className="grid gap-1.5 text-sm font-medium text-[#26382f]">
             Fecha
@@ -341,127 +412,239 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
             />
           </label>
 
-          <p className="rounded-md bg-[#f6f7f4] p-3 text-sm leading-6 text-[#526158]">
-            Selecciona una hora de inicio y una hora de fin en la cancha que
-            quieras reservar.
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-7 lg:grid-cols-4">
+            {quickDates.map((item, index) => {
+              const isActive = date === item.value;
+
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setDate(item.value)}
+                  className={`min-h-14 rounded-md border px-2 py-2 text-center text-sm transition ${
+                    isActive
+                      ? "border-[#164b35] bg-[#164b35] text-white"
+                      : "border-[#cbd3c9] bg-white text-[#26382f] hover:border-[#8ea090]"
+                  }`}
+                >
+                  <span className="block text-xs font-medium capitalize opacity-80">
+                    {index === 0
+                      ? "Hoy"
+                      : index === 1
+                        ? "Manana"
+                        : item.weekday}
+                  </span>
+                  <span className="mt-1 block font-semibold">{item.day}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid gap-3 rounded-md bg-[#f6f7f4] p-4 text-sm text-[#526158]">
+            {[
+              ["Cancha", selectedRange?.courtName ?? "Sin seleccionar"],
+              ["Horario", selectedTimeLabel],
+              ["Duracion", formatDuration(durationMinutes)],
+              [
+                "Total",
+                hasCompleteSelection ? formatCurrency(estimatedPrice) : "Pendiente",
+              ],
+              ["Sena", formatCurrency(settings?.depositAmount ?? 0)],
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between gap-3">
+                <span>{label}</span>
+                <span className="text-right font-semibold text-[#26382f]">
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={createReservation}
+            disabled={!hasCompleteSelection || isCreating}
+            className="h-11 rounded-md bg-[#164b35] px-4 text-sm font-semibold text-white transition hover:bg-[#0f3827] disabled:cursor-not-allowed disabled:bg-[#9aa9a0]"
+          >
+            {isCreating ? "Creando reserva..." : "Reservar con sena"}
+          </button>
+
+          <p className="text-sm leading-6 text-[#526158]">
+            Toca una hora de inicio y despues la hora de fin en la misma cancha.
           </p>
         </div>
-      </div>
+      </aside>
 
       <div className="rounded-lg border border-[#d9ded5] bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-medium capitalize text-[#526158]">
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7b3f28]">
+              Paso 2
+            </p>
+            <p className="mt-2 text-sm font-medium capitalize text-[#526158]">
               {dayLabel}
             </p>
             <h2 className="mt-1 text-xl font-semibold text-[#26382f]">
               Canchas disponibles
             </h2>
           </div>
-          <div className="rounded-md bg-[#edf4ef] px-3 py-2 text-sm text-[#164b35]">
-            Sena:{" "}
-            <span className="font-semibold">
-              {formatCurrency(settings?.depositAmount ?? 0)}
-            </span>
+          <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-64">
+            <div className="rounded-md bg-[#edf4ef] px-3 py-2 text-[#164b35]">
+              <p className="font-medium">Sena</p>
+              <p className="font-semibold">
+                {formatCurrency(settings?.depositAmount ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-md bg-[#f6f7f4] px-3 py-2 text-[#526158]">
+              <p className="font-medium">Precio hora</p>
+              <p className="font-semibold text-[#26382f]">
+                {formatCurrency(settings?.basePrice ?? 0)}
+              </p>
+            </div>
           </div>
         </div>
 
         <div className="mt-5 grid gap-3">
           {isLoading ? (
-            <p className="rounded-md border border-[#e2e6df] bg-[#f6f7f4] p-4 text-sm text-[#526158]">
-              Cargando horarios...
-            </p>
+            <div className="grid gap-3">
+              {[0, 1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="h-32 animate-pulse rounded-md border border-[#e2e6df] bg-[#f6f7f4]"
+                />
+              ))}
+            </div>
           ) : error ? (
             <p className="rounded-md border border-[#e7b8a4] bg-[#fff3ee] p-4 text-sm text-[#7b3f28]">
               {error}
             </p>
-          ) : courts.length > 0 ? (
-            slotsByCourt.map(({ court, slots: courtSlots }) => (
-              <div
-                key={court.id}
-                className="rounded-md border border-[#e2e6df] p-4"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-semibold text-[#26382f]">{court.name}</p>
-                    <p className="mt-1 text-sm text-[#526158]">
-                      {formatCurrency(settings?.basePrice ?? 0)} por hora
-                    </p>
+          ) : courts.length > 0 && allTimeButtons.length > 0 ? (
+            <div className="overflow-hidden rounded-md border border-[#e2e6df]">
+              <div className="overflow-x-auto">
+                <div
+                  className="min-w-[720px] bg-white"
+                  style={{
+                    gridTemplateColumns: `92px repeat(${courts.length}, minmax(132px, 1fr))`,
+                  }}
+                >
+                  <div
+                    className="grid border-b border-[#e2e6df] bg-[#f6f7f4]"
+                    style={{
+                      gridTemplateColumns: `92px repeat(${courts.length}, minmax(132px, 1fr))`,
+                    }}
+                  >
+                    <div className="sticky left-0 z-10 border-r border-[#e2e6df] bg-[#f6f7f4] px-3 py-3 text-sm font-semibold text-[#526158]">
+                      Hora
+                    </div>
+                    {slotsByCourt.map(({ court, slots: courtSlots }) => (
+                      <div
+                        key={court.id}
+                        className={`border-r border-[#e2e6df] px-3 py-3 text-sm font-semibold text-[#26382f] last:border-r-0 ${
+                          selectedRange?.courtId === court.id
+                            ? "bg-[#edf8f1]"
+                            : ""
+                        }`}
+                      >
+                        <span>{court.name}</span>
+                        <span className="mt-1 block text-xs font-medium text-[#526158]">
+                          {courtSlots.length} bloques
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  <span className="rounded-md bg-[#f6f7f4] px-3 py-2 text-sm font-medium text-[#526158]">
-                    {courtSlots.length} horarios
-                  </span>
+
+                  {allTimeButtons.map((time) => (
+                    <div
+                      key={time}
+                      className="grid border-b border-[#edf0ea] last:border-b-0"
+                      style={{
+                        gridTemplateColumns: `92px repeat(${courts.length}, minmax(132px, 1fr))`,
+                      }}
+                    >
+                      <div className="sticky left-0 z-10 border-r border-[#e2e6df] bg-white px-3 py-2 text-sm font-semibold text-[#526158]">
+                        {formatTime(time)}
+                      </div>
+                      {slotsByCourt.map(({ court, slots: courtSlots, timeButtons }) => {
+                        const hasCourtTime = timeButtons.includes(time);
+                        const selectedStartMs = selectedRange
+                          ? new Date(selectedRange.startsAt).getTime()
+                          : null;
+                        const selectedEndMs = selectedRange?.endsAt
+                          ? new Date(selectedRange.endsAt).getTime()
+                          : selectedStartMs;
+                        const timeMs = new Date(time).getTime();
+                        const isSelected =
+                          selectedRange?.courtId === court.id &&
+                          selectedStartMs !== null &&
+                          selectedEndMs !== null &&
+                          timeMs >= selectedStartMs &&
+                          timeMs <= selectedEndMs;
+                        const isRangeEdge =
+                          selectedRange?.courtId === court.id &&
+                          (timeMs === selectedStartMs ||
+                            timeMs === selectedEndMs);
+
+                        return (
+                          <div
+                            key={`${court.id}-${time}`}
+                            className={`border-r border-[#edf0ea] p-2 last:border-r-0 ${
+                              selectedRange?.courtId === court.id
+                                ? "bg-[#fbfffc]"
+                                : ""
+                            }`}
+                          >
+                            {hasCourtTime ? (
+                              <button
+                                type="button"
+                                disabled={isCreating}
+                                onClick={() =>
+                                  selectTime(court, courtSlots, time)
+                                }
+                                className={`h-10 w-full rounded-md border text-sm font-semibold transition ${
+                                  isSelected
+                                    ? isRangeEdge
+                                      ? "border-[#164b35] bg-[#164b35] text-white"
+                                      : "border-[#a9cfb8] bg-[#edf8f1] text-[#164b35]"
+                                    : "border-[#cbd3c9] bg-white text-[#26382f] hover:border-[#8ea090] disabled:cursor-not-allowed disabled:opacity-55"
+                                }`}
+                              >
+                                {isSelected ? "Seleccionado" : "Libre"}
+                              </button>
+                            ) : (
+                              <div className="flex h-10 items-center justify-center rounded-md bg-[#f6f7f4] text-sm text-[#9aa59d]">
+                                -
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
-
-                {courtSlots.length > 0 ? (
-                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-                    {getTimeButtons(courtSlots).map((time) => {
-                      const selectedStartMs = selectedRange
-                        ? new Date(selectedRange.startsAt).getTime()
-                        : null;
-                      const selectedEndMs = selectedRange?.endsAt
-                        ? new Date(selectedRange.endsAt).getTime()
-                        : selectedStartMs;
-                      const timeMs = new Date(time).getTime();
-                      const isSelected =
-                        selectedRange?.courtId === court.id &&
-                        selectedStartMs !== null &&
-                        selectedEndMs !== null &&
-                        timeMs >= selectedStartMs &&
-                        timeMs <= selectedEndMs;
-
-                      return (
-                        <button
-                          key={`${court.id}-${time}`}
-                          type="button"
-                          disabled={isCreating}
-                          onClick={() => selectTime(court, courtSlots, time)}
-                          className={`h-10 rounded-md border text-sm font-semibold transition ${
-                            isSelected
-                              ? "border-[#164b35] bg-[#164b35] text-white"
-                              : "border-[#cbd3c9] bg-white text-[#26382f] hover:border-[#8ea090] disabled:cursor-not-allowed disabled:opacity-55"
-                          }`}
-                        >
-                          {formatTime(time)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="mt-4 rounded-md bg-[#f6f7f4] p-3 text-sm text-[#526158]">
-                    Sin horarios disponibles.
-                  </p>
-                )}
               </div>
-            ))
+            </div>
           ) : (
             <p className="rounded-md border border-[#e2e6df] bg-[#f6f7f4] p-4 text-sm text-[#526158]">
-              No hay canchas activas cargadas.
+              {courts.length > 0
+                ? "No hay horarios disponibles para esta fecha."
+                : "No hay canchas activas cargadas."}
             </p>
           )}
         </div>
 
         {selectedRange ? (
           <div className="mt-5 rounded-md border border-[#cfe3d8] bg-[#f4fbf7] p-4 text-sm text-[#164b35]">
-            <p>
-              Seleccionaste {selectedRange.courtName} desde{" "}
-              {formatTime(selectedRange.startsAt)}
-              {selectedRange.endsAt
-                ? ` hasta ${formatTime(selectedRange.endsAt)} (${selectedHours} ${
-                    selectedHours === 1 ? "hora" : "horas"
-                  }, ${formatCurrency(estimatedPrice)})`
-                : ". Ahora elegi la hora de fin."}
+            <p className="font-semibold">
+              {hasCompleteSelection
+                ? "Paso 3: confirma la sena"
+                : "Falta elegir la hora de fin"}
             </p>
-            {selectedRange.endsAt ? (
-              <button
-                type="button"
-                onClick={createReservation}
-                disabled={isCreating}
-                className="mt-3 h-11 rounded-md bg-[#164b35] px-4 text-sm font-semibold text-white transition hover:bg-[#0f3827] disabled:cursor-not-allowed disabled:bg-[#8ca397]"
-              >
-                {isCreating ? "Creando reserva..." : "Reservar con sena"}
-              </button>
-            ) : null}
+            <p className="mt-1 text-[#35624c]">
+              {selectedRange.courtName} - {selectedTimeLabel}
+              {hasCompleteSelection
+                ? ` - ${formatDuration(durationMinutes)} - ${formatCurrency(estimatedPrice)}`
+                : ""}
+            </p>
           </div>
         ) : null}
 
