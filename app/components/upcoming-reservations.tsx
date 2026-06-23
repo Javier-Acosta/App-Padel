@@ -14,6 +14,10 @@ import {
   type Reservation,
   type ReservationStatus,
 } from "@/lib/domain/reservations";
+import {
+  formatClubTime,
+  getClubDateValue,
+} from "@/lib/padel/timezone";
 
 type UpcomingReservationsProps = {
   reservations: Reservation[];
@@ -57,30 +61,26 @@ function formatCurrency(value: number) {
 
 function formatDateTimeRange(startsAt: string, endsAt: string) {
   const start = new Date(startsAt);
-  const end = new Date(endsAt);
   const day = new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
   }).format(start);
-  const startTime = `${start.getHours()}:${String(start.getMinutes()).padStart(2, "0")}`;
-  const endTime = `${end.getHours()}:${String(end.getMinutes()).padStart(2, "0")}`;
 
-  return `${day} de ${startTime} a ${endTime}`;
+  return `${day} de ${formatClubTime(startsAt)} a ${formatClubTime(endsAt)}`;
 }
 
 function getDateInputValue(value: string) {
-  return new Date(value).toISOString().slice(0, 10);
+  return getClubDateValue(value);
 }
 
 function getTodayValue() {
-  return new Date().toISOString().slice(0, 10);
+  return getClubDateValue();
 }
 
 function formatTime(value: string) {
-  const date = new Date(value);
-
-  return `${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return formatClubTime(value);
 }
 
 function getTimeButtons(slots: AvailabilitySlot[]) {

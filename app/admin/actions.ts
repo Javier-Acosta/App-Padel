@@ -20,6 +20,7 @@ import {
   upsertClubSettings,
 } from "@/lib/padel/data";
 import { normalizeOpeningHours, clubDayKeys } from "@/lib/padel/opening-hours";
+import { toClubDateTime } from "@/lib/padel/timezone";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -72,8 +73,14 @@ function getPromotionInput(formData: FormData): Omit<Promotion, "id"> {
   return {
     name: getString(formData, "name"),
     active: formData.get("active") === "on",
-    startsAt: new Date(`${getString(formData, "startsAt")}T00:00:00`).toISOString(),
-    endsAt: new Date(`${getString(formData, "endsAt")}T23:59:59`).toISOString(),
+    startsAt: toClubDateTime(
+      getString(formData, "startsAt"),
+      "00:00",
+    ).toISOString(),
+    endsAt: new Date(
+      toClubDateTime(getString(formData, "endsAt"), "23:59").getTime() +
+        59 * 1000,
+    ).toISOString(),
     daysOfWeek,
     ...(typeof timeStartsAt === "string" &&
     timeStartsAt.length > 0 &&
@@ -193,8 +200,8 @@ export async function createCourtBlockAction(formData: FormData) {
 
   await createCourtBlock(token, {
     courtId: getString(formData, "courtId"),
-    startsAt: new Date(`${date}T${startsAt}:00`).toISOString(),
-    endsAt: new Date(`${date}T${endsAt}:00`).toISOString(),
+    startsAt: toClubDateTime(date, startsAt).toISOString(),
+    endsAt: toClubDateTime(date, endsAt).toISOString(),
     reason: getString(formData, "reason"),
     createdBy: user.id,
   });

@@ -10,6 +10,7 @@ import {
   isActiveBlockingReservation,
   timeRangesOverlap,
 } from "@/lib/domain/reservations";
+import { getClubDateRange, toClubDateTime } from "@/lib/padel/timezone";
 
 export type AvailabilitySlot = {
   courtId: string;
@@ -29,7 +30,7 @@ const dayKeys = [
 ] as const;
 
 function toDateTime(date: string, time: string) {
-  return new Date(`${date}T${time}:00`);
+  return toClubDateTime(date, time);
 }
 
 function addMinutes(date: Date, minutes: number) {
@@ -37,10 +38,7 @@ function addMinutes(date: Date, minutes: number) {
 }
 
 export function getDateRange(date: string) {
-  return {
-    startsAt: new Date(`${date}T00:00:00`).toISOString(),
-    endsAt: new Date(`${date}T23:59:59.999`).toISOString(),
-  };
+  return getClubDateRange(date);
 }
 
 export function calculateAvailability({
