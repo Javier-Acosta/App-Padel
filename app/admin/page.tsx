@@ -34,6 +34,10 @@ import {
   CLUB_OPENING_START,
   createDefaultOpeningHours,
 } from "@/lib/padel/opening-hours";
+import {
+  formatClubTime,
+  getClubDateValue,
+} from "@/lib/padel/timezone";
 
 const dayLabels = [
   ["monday", "Lunes"],
@@ -93,14 +97,13 @@ const filterStatusOptions = [
 function formatDateTime(value: string) {
   const date = new Date(value);
   const day = new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(date);
-  const hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, "0");
 
-  return `${day} ${hours}:${minutes}`;
+  return `${day} ${formatClubTime(date)}`;
 }
 
 function formatDateTimeRange(startsAt: string, endsAt: string) {
@@ -108,12 +111,7 @@ function formatDateTimeRange(startsAt: string, endsAt: string) {
 }
 
 function formatTimeRange(startsAt: string, endsAt: string) {
-  const start = new Date(startsAt);
-  const end = new Date(endsAt);
-  const startTime = `${start.getHours()}:${String(start.getMinutes()).padStart(2, "0")}`;
-  const endTime = `${end.getHours()}:${String(end.getMinutes()).padStart(2, "0")}`;
-
-  return `${startTime} a ${endTime}`;
+  return `${formatClubTime(startsAt)} a ${formatClubTime(endsAt)}`;
 }
 
 function formatCurrency(value: number) {
@@ -125,11 +123,11 @@ function formatCurrency(value: number) {
 }
 
 function getTodayValue() {
-  return new Date().toISOString().slice(0, 10);
+  return getClubDateValue();
 }
 
 function getDateInputValue(value: string) {
-  return new Date(value).toISOString().slice(0, 10);
+  return getClubDateValue(value);
 }
 
 function formatDateValue(value: string) {

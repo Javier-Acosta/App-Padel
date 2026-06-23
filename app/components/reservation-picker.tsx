@@ -7,6 +7,12 @@ import {
   type ClubSettings,
   type Court,
 } from "@/lib/domain/reservations";
+import {
+  addClubDays,
+  formatClubTime,
+  getClubDateValue,
+  toClubDateTime,
+} from "@/lib/padel/timezone";
 
 type ReservationPickerProps = {
   courts: Court[];
@@ -48,18 +54,15 @@ function formatDuration(minutes: number) {
 }
 
 function getTodayValue() {
-  return new Date().toISOString().slice(0, 10);
+  return getClubDateValue();
 }
 
 function addDaysToDateValue(value: string, days: number) {
-  const date = new Date(`${value}T12:00:00`);
-  date.setDate(date.getDate() + days);
-
-  return date.toISOString().slice(0, 10);
+  return addClubDays(value, days);
 }
 
 function formatDayChip(value: string) {
-  const date = new Date(`${value}T12:00:00`);
+  const date = toClubDateTime(value, "12:00");
 
   return {
     weekday: new Intl.DateTimeFormat("es-AR", {
@@ -83,11 +86,7 @@ function doSlotsOverlap(
 }
 
 function formatTime(value: string) {
-  const date = new Date(value);
-  const hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${hours}:${minutes}`;
+  return formatClubTime(value);
 }
 
 function getTimeButtons(slots: AvailabilitySlot[]) {
@@ -153,10 +152,11 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
 
   const dayLabel = useMemo(() => {
     return new Intl.DateTimeFormat("es-AR", {
+      timeZone: "America/Argentina/Buenos_Aires",
       weekday: "long",
       day: "numeric",
       month: "long",
-    }).format(new Date(`${date}T12:00:00`));
+    }).format(toClubDateTime(date, "12:00"));
   }, [date]);
 
   const quickDates = useMemo(() => {

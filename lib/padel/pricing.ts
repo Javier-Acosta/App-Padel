@@ -1,4 +1,8 @@
 import type { ClubSettings, Promotion } from "@/lib/domain/reservations";
+import {
+  formatClubTime,
+  getClubDateValue,
+} from "@/lib/padel/timezone";
 
 type ReservationPriceInput = {
   startsAt: Date;
@@ -9,13 +13,11 @@ type ReservationPriceInput = {
 };
 
 function dateValue(date: Date) {
-  return date.toISOString().slice(0, 10);
+  return getClubDateValue(date);
 }
 
 function timeValue(date: Date) {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(
-    date.getMinutes(),
-  ).padStart(2, "0")}`;
+  return formatClubTime(date).padStart(5, "0");
 }
 
 function promotionMatchesRange(promotion: Promotion, startsAt: Date, endsAt: Date) {

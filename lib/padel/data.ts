@@ -17,6 +17,7 @@ import {
   updatePocketBaseRecord,
 } from "@/lib/pocketbase/client";
 import { normalizeOpeningHours } from "@/lib/padel/opening-hours";
+import { getClubDateRange } from "@/lib/padel/timezone";
 
 type PocketBaseCourtRecord = {
   id: string;
@@ -453,10 +454,7 @@ export async function getUpcomingReservations(
 }
 
 function getDayRange(date: string) {
-  return {
-    startsAt: new Date(`${date}T00:00:00`).toISOString(),
-    endsAt: new Date(`${date}T23:59:59.999`).toISOString(),
-  };
+  return getClubDateRange(date);
 }
 
 export async function getUserProfilesByIds(token: string, userIds: string[]) {
