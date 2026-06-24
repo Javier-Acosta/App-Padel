@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getAuthToken, requireAdminUser } from "@/lib/auth/session";
+import { requireAdminUser } from "@/lib/auth/session";
 import {
   isReservationStatus,
   type ClubSettings,
 } from "@/lib/domain/reservations";
+import { authenticatePocketBaseAdmin } from "@/lib/pocketbase/client";
 import {
   createCourt,
   createCourtBlock,
@@ -39,13 +40,9 @@ function getNumber(formData: FormData, key: string) {
 
 async function requireAdminToken() {
   await requireAdminUser();
-  const token = await getAuthToken();
+  const adminAuth = await authenticatePocketBaseAdmin();
 
-  if (!token) {
-    throw new Error("Unauthorized.");
-  }
-
-  return token;
+  return adminAuth.token;
 }
 
 export async function createCourtAction(formData: FormData) {

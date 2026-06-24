@@ -17,6 +17,7 @@ import type {
   ReservationStatus,
 } from "@/lib/domain/reservations";
 import { isReservationStatus } from "@/lib/domain/reservations";
+import { authenticatePocketBaseAdmin } from "@/lib/pocketbase/client";
 import {
   getAllCourts,
   getClubSettingsRecord,
@@ -180,6 +181,8 @@ export default async function AdminPage({
     redirect("/reservas");
   }
 
+  const adminAuth = await authenticatePocketBaseAdmin();
+  const adminToken = adminAuth.token;
   const resolvedSearchParams = await searchParams;
   const statusParam = getSearchParam(resolvedSearchParams, "status");
   const courtIdParam = getSearchParam(resolvedSearchParams, "courtId");
@@ -195,13 +198,13 @@ export default async function AdminPage({
   };
 
   const [courts, settingsRecord, blocks, reservations] = await Promise.all([
-    getAllCourts(token),
-    getClubSettingsRecord(token),
-    getUpcomingCourtBlocks(token),
-    getUpcomingReservations(token, reservationFilters),
+    getAllCourts(adminToken),
+    getClubSettingsRecord(adminToken),
+    getUpcomingCourtBlocks(adminToken),
+    getUpcomingReservations(adminToken, reservationFilters),
   ]);
   const reservationUsers = await getUserProfilesByIds(
-    token,
+    adminToken,
     reservations.map((reservation) => reservation.userId),
   );
   const settings = settingsRecord?.settings ?? defaultSettings;
@@ -446,12 +449,12 @@ export default async function AdminPage({
             </Field>
             <div className="flex gap-2 self-end">
               <SubmitButton>Filtrar</SubmitButton>
-              <Link
+              <a
                 href="/admin"
                 className="inline-flex h-10 items-center rounded-md border border-[#cbd3c9] bg-white px-4 text-sm font-semibold text-[#26382f]"
               >
                 Limpiar
-              </Link>
+              </a>
             </div>
           </form>
 

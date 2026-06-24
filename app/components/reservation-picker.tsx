@@ -41,6 +41,23 @@ function getTodayValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function getDateChoices() {
+  return Array.from({ length: 7 }, (_, index) => {
+    const choice = new Date();
+    choice.setDate(choice.getDate() + index);
+    const value = choice.toISOString().slice(0, 10);
+    const weekday = new Intl.DateTimeFormat("es-AR", {
+      weekday: "short",
+    }).format(choice);
+
+    return {
+      value,
+      label: index === 0 ? "Hoy" : weekday,
+      date: `${choice.getDate()}/${choice.getMonth() + 1}`,
+    };
+  });
+}
+
 function doSlotsOverlap(
   first: Pick<AvailabilitySlot, "startsAt" | "endsAt">,
   second: Pick<AvailabilitySlot, "startsAt" | "endsAt">,
@@ -57,6 +74,16 @@ function formatTime(value: string) {
   const minutes = String(date.getMinutes()).padStart(2, "0");
 
   return `${hours}:${minutes}`;
+}
+
+function formatSelectedDuration(minutes: number) {
+  if (minutes <= 0) {
+    return "Pendiente";
+  }
+
+  const hours = minutes / 60;
+
+  return `${hours} ${hours === 1 ? "hora" : "horas"}`;
 }
 
 function getTimeButtons(slots: AvailabilitySlot[]) {
@@ -188,6 +215,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
     : 0;
   const selectedHours = durationMinutes / 60;
   const estimatedPrice = (settings?.basePrice ?? 0) * selectedHours;
+  const dateChoices = useMemo(() => getDateChoices(), []);
 
   function selectTime(
     court: Court,
@@ -326,10 +354,23 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
   }
 
   return (
-    <section className="mt-8 grid gap-6 lg:grid-cols-[360px_1fr]">
-      <div className="rounded-lg border border-[#d9ded5] bg-white p-5 shadow-sm">
-        <h2 className="text-xl font-semibold text-[#26382f]">Buscar turno</h2>
-        <div className="mt-5 grid gap-4">
+    <section className="mt-8 grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="self-start rounded-lg border border-[#d9ded5] bg-white p-5 shadow-sm lg:sticky lg:top-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#7b3f28]">
+              Paso 1
+            </p>
+            <h2 className="mt-3 text-xl font-semibold text-[#26382f]">
+              Armar reserva
+            </h2>
+          </div>
+          <span className="rounded-md bg-[#edf4ef] px-3 py-2 text-sm font-semibold text-[#164b35]">
+            En curso
+          </span>
+        </div>
+
+        <div className="mt-6 grid gap-4">
           <label className="grid gap-1.5 text-sm font-medium text-[#26382f]">
             Fecha
             <input
@@ -341,7 +382,81 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
             />
           </label>
 
-          <p className="rounded-md bg-[#f6f7f4] p-3 text-sm leading-6 text-[#526158]">
+          <div className="grid grid-cols-3 gap-2">
+            {dateChoices.map((choice) => {
+              const isSelected = choice.value === date;
+
+              return (
+                <button
+                  key={choice.value}
+                  type="button"
+                  onClick={() => setDate(choice.value)}
+                  className={`min-h-14 rounded-md border px-2 py-2 text-sm transition ${
+                    isSelected
+                      ? "border-[#164b35] bg-[#164b35] text-white"
+                      : "border-[#cbd3c9] bg-white text-[#526158] hover:border-[#8ea090]"
+                  }`}
+                >
+                  <span className="block">{choice.label}</span>
+                  <span className="mt-1 block font-bold text-[#1b241f] text-inherit">
+                    {choice.date}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid gap-3 rounded-md bg-[#f6f7f4] p-4 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#526158]">Cancha</span>
+              <span className="font-semibold text-[#26382f]">
+                {selectedRange?.courtName ?? "Sin seleccionar"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#526158]">Horario</span>
+              <span className="font-semibold text-[#26382f]">
+                {selectedRange
+                  ? selectedRange.endsAt
+                    ? `${formatTime(selectedRange.startsAt)} a ${formatTime(
+                        selectedRange.endsAt,
+                      )}`
+                    : `${formatTime(selectedRange.startsAt)} a definir`
+                  : "Sin seleccionar"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#526158]">Duracion</span>
+              <span className="font-semibold text-[#26382f]">
+                {formatSelectedDuration(durationMinutes)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#526158]">Total</span>
+              <span className="font-semibold text-[#26382f]">
+                {durationMinutes > 0
+                  ? formatCurrency(estimatedPrice)
+                  : "Pendiente"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#526158]">Sena</span>
+              <span className="font-semibold text-[#26382f]">
+                {formatCurrency(settings?.depositAmount ?? 0)}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={createReservation}
+            disabled={!selectedRange?.endsAt || isCreating}
+            className="h-11 rounded-md bg-[#164b35] px-4 text-sm font-semibold text-white transition hover:bg-[#0f3827] disabled:cursor-not-allowed disabled:bg-[#9aaba1]"
+          >
+            {isCreating ? "Creando reserva..." : "Reservar con sena"}
+          </button>
+
+          <p className="text-sm leading-6 text-[#526158]">
             Selecciona una hora de inicio y una hora de fin en la cancha que
             quieras reservar.
           </p>
@@ -452,16 +567,6 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
                   }, ${formatCurrency(estimatedPrice)})`
                 : ". Ahora elegi la hora de fin."}
             </p>
-            {selectedRange.endsAt ? (
-              <button
-                type="button"
-                onClick={createReservation}
-                disabled={isCreating}
-                className="mt-3 h-11 rounded-md bg-[#164b35] px-4 text-sm font-semibold text-white transition hover:bg-[#0f3827] disabled:cursor-not-allowed disabled:bg-[#8ca397]"
-              >
-                {isCreating ? "Creando reserva..." : "Reservar con sena"}
-              </button>
-            ) : null}
           </div>
         ) : null}
 

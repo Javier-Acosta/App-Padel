@@ -405,8 +405,7 @@ export async function getUpcomingReservations(
   }
 
   if (filters.date) {
-    const { startsAt, endsAt } = getDayRange(filters.date);
-    filterParts.push(`startsAt < "${endsAt}" && endsAt > "${startsAt}"`);
+    filterParts.push(`reservationDate = "${filters.date}"`);
   }
 
   const result = await listPocketBaseRecords<PocketBaseReservationRecord>(
@@ -423,13 +422,6 @@ export async function getUpcomingReservations(
   );
 
   return result.items.map(mapReservation);
-}
-
-function getDayRange(date: string) {
-  return {
-    startsAt: new Date(`${date}T00:00:00`).toISOString(),
-    endsAt: new Date(`${date}T23:59:59.999`).toISOString(),
-  };
 }
 
 export async function getUserProfilesByIds(token: string, userIds: string[]) {
