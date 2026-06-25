@@ -12,6 +12,7 @@ import {
   updateReservationStatusAction,
   updateSettingsAction,
 } from "@/app/admin/actions";
+import { ReservationStatusActions } from "@/app/admin/reservation-status-actions";
 import { LogoutButton } from "@/app/components/logout-button";
 import { getAuthToken, getCurrentUser } from "@/lib/auth/session";
 import type {
@@ -36,6 +37,7 @@ import {
   createDefaultOpeningHours,
 } from "@/lib/padel/opening-hours";
 import {
+  addClubDays,
   formatClubTime,
   getClubDateValue,
 } from "@/lib/padel/timezone";
@@ -379,6 +381,11 @@ export default async function AdminPage({
       ? { date: dateParam }
       : {}),
   };
+  const reservationFilterKey = [
+    reservationFilters.status ?? "",
+    reservationFilters.courtId ?? "",
+    reservationFilters.date ?? "",
+  ].join(":");
 
   const [courts, settingsRecord, blocks, reservations, promotions] =
     await Promise.all([
@@ -396,12 +403,25 @@ export default async function AdminPage({
   const courtNameById = new Map(courts.map((court) => [court.id, court.name]));
   const userById = new Map(reservationUsers.map((item) => [item.id, item]));
   const selectedDate = reservationFilters.date ?? getTodayValue();
+  const previousDate = addClubDays(selectedDate, -1);
+  const nextDate = addClubDays(selectedDate, 1);
+  const todayDate = getTodayValue();
   const reservationsForSelectedDate = reservations.filter(
     (reservation) => getDateInputValue(reservation.startsAt) === selectedDate,
   );
   const blocksForSelectedDate = blocks.filter(
     (block) => getDateInputValue(block.startsAt) === selectedDate,
   );
+  const payableReservationsForSelectedDate = reservationsForSelectedDate.filter(
+    (reservation) =>
+      reservation.status === "confirmed" ||
+      reservation.status === "completed" ||
+      reservation.status === "no_show",
+  );
+  const pendingPaymentReservationsForSelectedDate =
+    reservationsForSelectedDate.filter(
+      (reservation) => reservation.status === "pending_payment",
+    );
   const selectedDateStats = [
     {
       label: "Turnos",
@@ -415,19 +435,43 @@ export default async function AdminPage({
     },
     {
       label: "Pendientes",
-      value: reservationsForSelectedDate.filter(
-        (reservation) => reservation.status === "pending_payment",
-      ).length,
+      value: pendingPaymentReservationsForSelectedDate.length,
     },
     {
-      label: "Ingresos",
+      label: "Total confirmado",
       value: formatCurrency(
-        reservationsForSelectedDate
-          .filter((reservation) => reservation.status === "confirmed")
+        payableReservationsForSelectedDate
           .reduce((total, reservation) => total + reservation.totalPrice, 0),
       ),
     },
+    {
+      label: "Senas cobradas",
+      value: formatCurrency(
+        payableReservationsForSelectedDate.reduce(
+          (total, reservation) => total + reservation.depositAmount,
+          0,
+        ),
+      ),
+    },
+    {
+      label: "Senas pendientes",
+      value: formatCurrency(
+        pendingPaymentReservationsForSelectedDate.reduce(
+          (total, reservation) => total + reservation.depositAmount,
+          0,
+        ),
+      ),
+    },
   ];
+  const reservationsByCourtForSelectedDate = courts.map((court) => ({
+    court,
+    reservations: reservationsForSelectedDate
+      .filter((reservation) => reservation.courtId === court.id)
+      .sort(
+        (left, right) =>
+          new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime(),
+      ),
+  }));
   const blockStats = [
     {
       label: "Bloqueos del dia",
@@ -504,22 +548,44 @@ export default async function AdminPage({
                 Vista rapida de turnos, pagos pendientes y asistencia.
               </p>
             </div>
-            <form className="grid gap-3 sm:grid-cols-[180px_auto]">
-              <Field label="Fecha">
-                <input
-                  type="date"
-                  name="date"
-                  defaultValue={selectedDate}
-                  className={textInputClassName()}
-                />
-              </Field>
-              <div className="self-end">
-                <SubmitButton>Ver dia</SubmitButton>
+            <div className="grid gap-3">
+              <div className="flex flex-wrap gap-2 lg:justify-end">
+                <Link
+                  href={`/admin?date=${previousDate}`}
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-[#cbd3c9] bg-white px-3 text-sm font-semibold text-[#26382f] transition hover:border-[#8ea090]"
+                >
+                  Anterior
+                </Link>
+                <Link
+                  href={`/admin?date=${todayDate}`}
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-[#cbd3c9] bg-white px-3 text-sm font-semibold text-[#26382f] transition hover:border-[#8ea090]"
+                >
+                  Hoy
+                </Link>
+                <Link
+                  href={`/admin?date=${nextDate}`}
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-[#cbd3c9] bg-white px-3 text-sm font-semibold text-[#26382f] transition hover:border-[#8ea090]"
+                >
+                  Siguiente
+                </Link>
               </div>
-            </form>
+              <form className="grid gap-3 sm:grid-cols-[180px_auto]">
+                <Field label="Fecha">
+                  <input
+                    type="date"
+                    name="date"
+                    defaultValue={selectedDate}
+                    className={textInputClassName()}
+                  />
+                </Field>
+                <div className="self-end">
+                  <SubmitButton>Ver dia</SubmitButton>
+                </div>
+              </form>
+            </div>
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <div className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
             {selectedDateStats.map((item) => (
               <div key={item.label} className="rounded-md bg-[#f6f7f4] p-4">
                 <p className="text-sm font-medium text-[#526158]">
@@ -532,55 +598,106 @@ export default async function AdminPage({
             ))}
           </div>
 
-          <div className="mt-5 grid gap-3">
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
             {reservationsForSelectedDate.length > 0 ? (
-              reservationsForSelectedDate.map((reservation) => {
-                const reservationUser = userById.get(reservation.userId);
-
-                return (
-                  <div
-                    key={reservation.id}
-                    className="grid gap-3 rounded-md border border-[#e2e6df] p-4 lg:grid-cols-[120px_1fr_auto]"
-                  >
+              reservationsByCourtForSelectedDate.map(({ court, reservations }) => (
+                <section
+                  key={court.id}
+                  className="rounded-md border border-[#e2e6df] p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-lg font-semibold text-[#26382f]">
-                        {formatTimeRange(
-                          reservation.startsAt,
-                          reservation.endsAt,
-                        )}
-                      </p>
+                      <h3 className="font-semibold text-[#26382f]">
+                        {court.name}
+                      </h3>
                       <p className="mt-1 text-sm text-[#526158]">
-                        {reservation.durationMinutes / 60} h
+                        {reservations.length === 1
+                          ? "1 turno"
+                          : `${reservations.length} turnos`}
                       </p>
                     </div>
-                    <div>
-                      <p className="font-semibold text-[#26382f]">
-                        {courtNameById.get(reservation.courtId) ?? "Cancha"}
-                      </p>
-                      <p className="mt-1 text-sm text-[#526158]">
-                        {reservationUser?.name ?? "Usuario"} -{" "}
-                        {reservationUser?.phone ??
-                          reservationUser?.email ??
-                          reservation.userId}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-start gap-2 lg:justify-end">
-                      <span
-                        className={`rounded-md px-3 py-2 text-sm font-semibold ${statusBadgeClassName(
-                          reservation.status,
-                        )}`}
-                      >
-                        {statusLabels[reservation.status]}
-                      </span>
-                      <span className="rounded-md bg-[#f6f7f4] px-3 py-2 text-sm font-semibold text-[#526158]">
-                        {formatCurrency(reservation.totalPrice)}
-                      </span>
-                    </div>
+                    <span
+                      className={`rounded-md px-3 py-2 text-sm font-semibold ${
+                        court.active
+                          ? "bg-[#edf4ef] text-[#164b35]"
+                          : "bg-[#f6f7f4] text-[#526158]"
+                      }`}
+                    >
+                      {court.active ? "Activa" : "Inactiva"}
+                    </span>
                   </div>
-                );
-              })
+
+                  <div className="mt-4 grid gap-2">
+                    {reservations.length > 0 ? (
+                      reservations.map((reservation) => {
+                        const reservationUser = userById.get(
+                          reservation.userId,
+                        );
+
+                        return (
+                          <div
+                            key={reservation.id}
+                            className="grid gap-3 rounded-md bg-[#f6f7f4] p-3 sm:grid-cols-[96px_1fr]"
+                          >
+                            <div>
+                              <p className="font-semibold text-[#26382f]">
+                                {formatTimeRange(
+                                  reservation.startsAt,
+                                  reservation.endsAt,
+                                )}
+                              </p>
+                              <p className="mt-1 text-sm text-[#526158]">
+                                {reservation.durationMinutes / 60} h
+                              </p>
+                            </div>
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className={`rounded-md px-2.5 py-1.5 text-xs font-semibold ${statusBadgeClassName(
+                                    reservation.status,
+                                  )}`}
+                                >
+                                  {statusLabels[reservation.status]}
+                                </span>
+                                <span className="rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-[#526158]">
+                                  Total {formatCurrency(reservation.totalPrice)}
+                                </span>
+                                <span className="rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-[#526158]">
+                                  Sena{" "}
+                                  {formatCurrency(reservation.depositAmount)}
+                                </span>
+                              </div>
+                              <p className="mt-2 text-sm font-semibold text-[#26382f]">
+                                {reservationUser?.name ?? "Usuario"}
+                              </p>
+                              <p className="mt-1 text-sm text-[#526158]">
+                                {reservationUser?.phone ??
+                                  reservationUser?.email ??
+                                  reservation.userId}
+                              </p>
+                              <div className="mt-3">
+                                <ReservationStatusActions
+                                  actions={adminStatusActions}
+                                  compact
+                                  currentStatus={reservation.status}
+                                  reservationId={reservation.id}
+                                  updateAction={updateReservationStatusAction}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="rounded-md bg-[#f6f7f4] p-3 text-sm text-[#526158]">
+                        Sin turnos para esta fecha.
+                      </p>
+                    )}
+                  </div>
+                </section>
+              ))
             ) : (
-              <p className="rounded-md bg-[#f6f7f4] p-4 text-sm text-[#526158]">
+              <p className="rounded-md bg-[#f6f7f4] p-4 text-sm text-[#526158] lg:col-span-2">
                 No hay reservas para esta fecha.
               </p>
             )}
@@ -819,7 +936,10 @@ export default async function AdminPage({
             Controla pagos, cancelaciones y asistencia desde el panel.
           </p>
 
-          <form className="mt-5 grid gap-3 rounded-md bg-[#f6f7f4] p-4 md:grid-cols-[1fr_1fr_1fr_auto]">
+          <form
+            key={reservationFilterKey}
+            className="mt-5 grid gap-3 rounded-md bg-[#f6f7f4] p-4 md:grid-cols-[1fr_1fr_1fr_auto]"
+          >
             <Field label="Estado">
               <select
                 name="status"
@@ -857,12 +977,13 @@ export default async function AdminPage({
             </Field>
             <div className="flex gap-2 self-end">
               <SubmitButton>Filtrar</SubmitButton>
-              <a
+              <Link
                 href="/admin"
+                replace
                 className="inline-flex h-10 items-center rounded-md border border-[#cbd3c9] bg-white px-4 text-sm font-semibold text-[#26382f]"
               >
                 Limpiar
-              </a>
+              </Link>
             </div>
           </form>
 
@@ -910,32 +1031,12 @@ export default async function AdminPage({
                         >
                           {statusLabels[reservation.status]}
                         </span>
-                        <div className="flex flex-wrap gap-2">
-                          {adminStatusActions.map(([status, label]) => (
-                            <form
-                              key={`${reservation.id}-${status}`}
-                              action={updateReservationStatusAction}
-                            >
-                              <input
-                                type="hidden"
-                                name="id"
-                                value={reservation.id}
-                              />
-                              <input
-                                type="hidden"
-                                name="status"
-                                value={status}
-                              />
-                              <button
-                                type="submit"
-                                disabled={reservation.status === status}
-                                className="h-10 rounded-md border border-[#cbd3c9] bg-white px-3 text-sm font-semibold text-[#26382f] transition hover:border-[#8ea090] disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                {label}
-                              </button>
-                            </form>
-                          ))}
-                        </div>
+                        <ReservationStatusActions
+                          actions={adminStatusActions}
+                          currentStatus={reservation.status}
+                          reservationId={reservation.id}
+                          updateAction={updateReservationStatusAction}
+                        />
                       </div>
                     </div>
                 );

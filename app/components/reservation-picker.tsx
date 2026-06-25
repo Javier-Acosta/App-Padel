@@ -89,6 +89,23 @@ function formatTime(value: string) {
   return formatClubTime(value);
 }
 
+function formatAvailabilityDate(value: string) {
+  const formatter = new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const formatted = formatter.format(toClubDateTime(value, "12:00"));
+  const [weekday = "", datePart = ""] = formatted.split(", ");
+  const titledDate = datePart
+    .split(" de ")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" De ");
+
+  return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${titledDate}`;
+}
+
 function getTimeButtons(slots: AvailabilitySlot[]) {
   const times = new Set<string>();
 
@@ -151,12 +168,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
   );
 
   const dayLabel = useMemo(() => {
-    return new Intl.DateTimeFormat("es-AR", {
-      timeZone: "America/Argentina/Buenos_Aires",
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    }).format(toClubDateTime(date, "12:00"));
+    return formatAvailabilityDate(date);
   }, [date]);
 
   const quickDates = useMemo(() => {
@@ -183,8 +195,6 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
       };
     });
   }, [courts, slots]);
-
-  const allTimeButtons = useMemo(() => getTimeButtons(slots), [slots]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -478,39 +488,25 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
       <div className="rounded-lg border border-[#d9ded5] bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7b3f28]">
-              Paso 2
-            </p>
-            <p className="mt-2 text-sm font-medium capitalize text-[#526158]">
+            <p className="text-sm font-medium capitalize text-[#526158]">
               {dayLabel}
             </p>
             <h2 className="mt-1 text-xl font-semibold text-[#26382f]">
               Canchas disponibles
             </h2>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-64">
-            <div className="rounded-md bg-[#edf4ef] px-3 py-2 text-[#164b35]">
-              <p className="font-medium">Sena</p>
-              <p className="font-semibold">
-                {formatCurrency(settings?.depositAmount ?? 0)}
-              </p>
-            </div>
-            <div className="rounded-md bg-[#f6f7f4] px-3 py-2 text-[#526158]">
-              <p className="font-medium">Precio hora</p>
-              <p className="font-semibold text-[#26382f]">
-                {formatCurrency(settings?.basePrice ?? 0)}
-              </p>
-            </div>
-          </div>
+          <span className="w-fit rounded-md bg-[#edf4ef] px-3 py-2 text-sm font-semibold text-[#164b35]">
+            Sena: {formatCurrency(settings?.depositAmount ?? 0)}
+          </span>
         </div>
 
-        <div className="mt-5 grid gap-3">
+        <div className="mt-6 grid gap-3">
           {isLoading ? (
             <div className="grid gap-3">
               {[0, 1, 2].map((item) => (
                 <div
                   key={item}
-                  className="h-32 animate-pulse rounded-md border border-[#e2e6df] bg-[#f6f7f4]"
+                  className="h-48 animate-pulse rounded-md border border-[#e2e6df] bg-[#f6f7f4]"
                 />
               ))}
             </div>
@@ -518,54 +514,35 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
             <p className="rounded-md border border-[#e7b8a4] bg-[#fff3ee] p-4 text-sm text-[#7b3f28]">
               {error}
             </p>
-          ) : courts.length > 0 && allTimeButtons.length > 0 ? (
-            <div className="overflow-hidden rounded-md border border-[#e2e6df]">
-              <div className="overflow-x-auto">
-                <div
-                  className="min-w-[720px] bg-white"
-                  style={{
-                    gridTemplateColumns: `92px repeat(${courts.length}, minmax(132px, 1fr))`,
-                  }}
-                >
-                  <div
-                    className="grid border-b border-[#e2e6df] bg-[#f6f7f4]"
-                    style={{
-                      gridTemplateColumns: `92px repeat(${courts.length}, minmax(132px, 1fr))`,
-                    }}
+          ) : courts.length > 0 && slots.length > 0 ? (
+            <div className="grid gap-3">
+              {slotsByCourt
+                .filter(({ timeButtons }) => timeButtons.length > 0)
+                .map(({ court, slots: courtSlots, timeButtons }) => (
+                  <section
+                    key={court.id}
+                    className={`rounded-md border bg-white p-4 transition ${
+                      selectedRange?.courtId === court.id
+                        ? "border-[#a9cfb8] shadow-sm"
+                        : "border-[#e2e6df]"
+                    }`}
                   >
-                    <div className="sticky left-0 z-10 border-r border-[#e2e6df] bg-[#f6f7f4] px-3 py-3 text-sm font-semibold text-[#526158]">
-                      Hora
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-base font-semibold text-[#26382f]">
+                          {court.name}
+                        </h3>
+                        <p className="mt-2 text-sm text-[#526158]">
+                          {formatCurrency(settings?.basePrice ?? 0)} por hora
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-md bg-[#f6f7f4] px-3 py-2 text-sm font-medium text-[#526158]">
+                        {timeButtons.length} horarios
+                      </span>
                     </div>
-                    {slotsByCourt.map(({ court, slots: courtSlots }) => (
-                      <div
-                        key={court.id}
-                        className={`border-r border-[#e2e6df] px-3 py-3 text-sm font-semibold text-[#26382f] last:border-r-0 ${
-                          selectedRange?.courtId === court.id
-                            ? "bg-[#edf8f1]"
-                            : ""
-                        }`}
-                      >
-                        <span>{court.name}</span>
-                        <span className="mt-1 block text-xs font-medium text-[#526158]">
-                          {courtSlots.length} bloques
-                        </span>
-                      </div>
-                    ))}
-                  </div>
 
-                  {allTimeButtons.map((time) => (
-                    <div
-                      key={time}
-                      className="grid border-b border-[#edf0ea] last:border-b-0"
-                      style={{
-                        gridTemplateColumns: `92px repeat(${courts.length}, minmax(132px, 1fr))`,
-                      }}
-                    >
-                      <div className="sticky left-0 z-10 border-r border-[#e2e6df] bg-white px-3 py-2 text-sm font-semibold text-[#526158]">
-                        {formatTime(time)}
-                      </div>
-                      {slotsByCourt.map(({ court, slots: courtSlots, timeButtons }) => {
-                        const hasCourtTime = timeButtons.includes(time);
+                    <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+                      {timeButtons.map((time) => {
                         const selectedStartMs = selectedRange
                           ? new Date(selectedRange.startsAt).getTime()
                           : null;
@@ -585,43 +562,26 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
                             timeMs === selectedEndMs);
 
                         return (
-                          <div
+                          <button
                             key={`${court.id}-${time}`}
-                            className={`border-r border-[#edf0ea] p-2 last:border-r-0 ${
-                              selectedRange?.courtId === court.id
-                                ? "bg-[#fbfffc]"
-                                : ""
+                            type="button"
+                            disabled={isCreating}
+                            onClick={() => selectTime(court, courtSlots, time)}
+                            className={`h-10 rounded-md border px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-55 ${
+                              isSelected
+                                ? isRangeEdge
+                                  ? "border-[#164b35] bg-[#164b35] text-white"
+                                  : "border-[#a9cfb8] bg-[#edf8f1] text-[#164b35]"
+                                : "border-[#cbd3c9] bg-white text-[#1b241f] hover:border-[#8ea090] hover:bg-[#f8faf7]"
                             }`}
                           >
-                            {hasCourtTime ? (
-                              <button
-                                type="button"
-                                disabled={isCreating}
-                                onClick={() =>
-                                  selectTime(court, courtSlots, time)
-                                }
-                                className={`h-10 w-full rounded-md border text-sm font-semibold transition ${
-                                  isSelected
-                                    ? isRangeEdge
-                                      ? "border-[#164b35] bg-[#164b35] text-white"
-                                      : "border-[#a9cfb8] bg-[#edf8f1] text-[#164b35]"
-                                    : "border-[#cbd3c9] bg-white text-[#26382f] hover:border-[#8ea090] disabled:cursor-not-allowed disabled:opacity-55"
-                                }`}
-                              >
-                                {isSelected ? "Seleccionado" : "Libre"}
-                              </button>
-                            ) : (
-                              <div className="flex h-10 items-center justify-center rounded-md bg-[#f6f7f4] text-sm text-[#9aa59d]">
-                                -
-                              </div>
-                            )}
-                          </div>
+                            {formatTime(time)}
+                          </button>
                         );
                       })}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </section>
+                ))}
             </div>
           ) : (
             <p className="rounded-md border border-[#e2e6df] bg-[#f6f7f4] p-4 text-sm text-[#526158]">

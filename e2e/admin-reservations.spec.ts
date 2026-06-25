@@ -4,6 +4,8 @@ const testPassword = "AppPadel123!";
 const playerEmail = "jugador.demo@app-padel.test";
 const adminEmail = "admin.demo@app-padel.test";
 
+test.describe.configure({ mode: "serial" });
+
 function getFutureDateValue(daysFromNow: number) {
   const date = new Date();
   date.setDate(date.getDate() + daysFromNow);
@@ -25,10 +27,11 @@ async function login(
   expect(response.ok()).toBe(true);
 }
 
-test("admin sees a newly created reservation and can clear filters", async ({
-  page,
-}) => {
-  const reservationDate = getFutureDateValue(7);
+async function createPendingReservation(
+  page: import("@playwright/test").Page,
+  daysFromNow: number,
+) {
+  const reservationDate = getFutureDateValue(daysFromNow);
 
   await login(page, playerEmail);
 
@@ -54,9 +57,50 @@ test("admin sees a newly created reservation and can clear filters", async ({
   });
   expect(reservationResponse.ok()).toBe(true);
 
+  return { reservationDate, slot };
+}
+
+test("player sees a newly created pending reservation", async ({ page }) => {
+  const { slot } = await createPendingReservation(page, 47);
+
+  await page.goto("/reservas");
+
+  const upcomingSection = page.locator("section", {
+    has: page.getByRole("heading", { name: "Mis proximos turnos" }),
+  });
+
+  await expect(upcomingSection.getByText(slot.courtName).first()).toBeVisible();
+  await expect(upcomingSection.getByText("Pendiente de pago").first()).toBeVisible();
+  await expect(upcomingSection.getByRole("button", { name: "Pagar sena" }).first()).toBeVisible();
+});
+
+test("admin manages reservations from filters and daily agenda", async ({ page }) => {
+  const { reservationDate, slot } = await createPendingReservation(page, 53);
+
   await login(page, adminEmail);
-  await page.goto("/admin");
-  await expect(page).toHaveURL(/\/admin$/);
+  await page.goto(`/admin?date=${reservationDate}`);
+
+  const agendaSection = page.locator("section", {
+    has: page.getByRole("heading", { name: "Agenda del dia" }),
+  });
+
+  await expect(agendaSection.getByText(slot.courtName).first()).toBeVisible();
+  await expect(agendaSection.getByText("Pendiente de pago").first()).toBeVisible();
+  await expect(agendaSection.getByText("Senas pendientes").first()).toBeVisible();
+  await expect(agendaSection.getByText(/Total \$/).first()).toBeVisible();
+  await expect(agendaSection.getByText(/Sena \$/).first()).toBeVisible();
+  await expect(agendaSection.getByRole("link", { name: "Anterior" })).toHaveAttribute(
+    "href",
+    /\/admin\?date=/,
+  );
+  await expect(agendaSection.getByRole("link", { name: "Hoy" })).toHaveAttribute(
+    "href",
+    /\/admin\?date=/,
+  );
+  await expect(agendaSection.getByRole("link", { name: "Siguiente" })).toHaveAttribute(
+    "href",
+    /\/admin\?date=/,
+  );
 
   const reservationsSection = page.locator("section", {
     has: page.getByRole("heading", { name: "Reservas proximas" }),
@@ -87,11 +131,17 @@ test("admin sees a newly created reservation and can clear filters", async ({
   await expect(reservationsForm.locator('input[name="date"]')).toHaveValue("");
   await expect(reservationsSection.getByText("Jugador Demo").first()).toBeVisible();
 
-  await page.goto(`/admin?status=pending_payment&date=${reservationDate}`);
-  await reservationsSection
+  await page.goto(`/admin?date=${reservationDate}`);
+  const cancelButton = page
+    .locator("section", { has: page.getByRole("heading", { name: "Agenda del dia" }) })
     .locator('button:not([disabled])')
     .filter({ hasText: "Cancelar" })
-    .first()
-    .click();
-  await page.waitForLoadState("networkidle");
+    .first();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("cancelar esta reserva");
+    await dialog.accept();
+  });
+  await cancelButton.click();
+  await expect(page.getByText("Cancelada por admin").first()).toBeVisible();
 });
