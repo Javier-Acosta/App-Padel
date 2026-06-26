@@ -240,7 +240,7 @@ function ReschedulePicker({
       const endsAt = clickedMs < startMs ? selectedRange.startsAt : time;
 
       if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
-        setError("Elegi un rango de al menos 1 hora en bloques disponibles.");
+        setError("Elegí un rango de al menos 1 hora en bloques disponibles.");
         setSelectedRange({
           courtId,
           courtName: court.name,
@@ -269,7 +269,7 @@ function ReschedulePicker({
     const endsAt = clickedMs < startMs ? selectedRange.startsAt : time;
 
     if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
-      setError("Elegi un rango de al menos 1 hora en bloques disponibles.");
+      setError("Elegí un rango de al menos 1 hora en bloques disponibles.");
       setSelectedRange({
         courtId,
         courtName: court.name,
@@ -416,10 +416,10 @@ export function UpcomingReservations({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-[#26382f]">
-            Mis proximos turnos
+            Mis próximos turnos
           </h2>
           <p className="mt-1 text-sm text-[#526158]">
-            Revisa el estado de tus reservas, cancela o reprograma eligiendo un
+            Revisá el estado de tus reservas, cancelá o reprogramá eligiendo un
             horario disponible.
           </p>
         </div>
@@ -459,7 +459,7 @@ export function UpcomingReservations({
                       {statusLabels[reservation.status]}
                     </span>
                     <p className="mt-2 text-right text-[#526158]">
-                      Sena {formatCurrency(reservation.depositAmount)}
+                      Seña {formatCurrency(reservation.depositAmount)}
                     </p>
                   </div>
                   {canChange ? (
@@ -491,7 +491,7 @@ export function UpcomingReservations({
                         type="submit"
                         className="h-10 rounded-md bg-[#f6c46b] px-4 text-sm font-semibold text-[#10241b] transition hover:bg-[#ffd990]"
                       >
-                        Pagar sena
+                        Pagar seña
                       </button>
                     </form>
                   ) : null}
@@ -505,7 +505,7 @@ export function UpcomingReservations({
           })
         ) : (
           <p className="rounded-md bg-[#f6f7f4] p-4 text-sm text-[#526158]">
-            Todavia no tenes turnos proximos.
+            Todavía no tenés turnos próximos.
           </p>
         )}
       </div>

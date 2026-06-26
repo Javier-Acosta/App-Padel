@@ -66,12 +66,12 @@ test("player sees a newly created pending reservation", async ({ page }) => {
   await page.goto("/reservas");
 
   const upcomingSection = page.locator("section", {
-    has: page.getByRole("heading", { name: "Mis proximos turnos" }),
+    has: page.getByRole("heading", { name: "Mis próximos turnos" }),
   });
 
   await expect(upcomingSection.getByText(slot.courtName).first()).toBeVisible();
   await expect(upcomingSection.getByText("Pendiente de pago").first()).toBeVisible();
-  await expect(upcomingSection.getByRole("button", { name: "Pagar sena" }).first()).toBeVisible();
+  await expect(upcomingSection.getByRole("button", { name: "Pagar seña" }).first()).toBeVisible();
 });
 
 test("admin manages reservations from filters and daily agenda", async ({ page }) => {
@@ -81,14 +81,14 @@ test("admin manages reservations from filters and daily agenda", async ({ page }
   await page.goto(`/admin?date=${reservationDate}`);
 
   const agendaSection = page.locator("section", {
-    has: page.getByRole("heading", { name: "Agenda del dia" }),
+    has: page.getByRole("heading", { name: "Agenda del día" }),
   });
 
   await expect(agendaSection.getByText(slot.courtName).first()).toBeVisible();
   await expect(agendaSection.getByText("Pendiente de pago").first()).toBeVisible();
-  await expect(agendaSection.getByText("Senas pendientes").first()).toBeVisible();
+  await expect(agendaSection.getByText("Señas pendientes").first()).toBeVisible();
   await expect(agendaSection.getByText(/Total \$/).first()).toBeVisible();
-  await expect(agendaSection.getByText(/Sena \$/).first()).toBeVisible();
+  await expect(agendaSection.getByText(/Seña \$/).first()).toBeVisible();
   await expect(agendaSection.getByRole("link", { name: "Anterior" })).toHaveAttribute(
     "href",
     /\/admin\?date=/,
@@ -133,7 +133,7 @@ test("admin manages reservations from filters and daily agenda", async ({ page }
 
   await page.goto(`/admin?date=${reservationDate}`);
   const cancelButton = page
-    .locator("section", { has: page.getByRole("heading", { name: "Agenda del dia" }) })
+    .locator("section", { has: page.getByRole("heading", { name: "Agenda del día" }) })
     .locator('button:not([disabled])')
     .filter({ hasText: "Cancelar" })
     .first();

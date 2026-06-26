@@ -95,7 +95,7 @@ export async function createReservationDepositPreference({
         items: [
           {
             id: reservation.id,
-            title: "Sena reserva AppPadel",
+            title: "Seña reserva AppPadel",
             description: `Reserva ${reservation.reservationDate}`,
             quantity: 1,
             currency_id: "ARS",

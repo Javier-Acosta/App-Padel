@@ -55,7 +55,7 @@ export function ReservationStatusActions({
           onSubmit={(event) => {
             if (
               guardedStatuses.has(status) &&
-              !window.confirm("Confirmas que queres cancelar esta reserva?")
+              !window.confirm("¿Confirmás que querés cancelar esta reserva?")
             ) {
               event.preventDefault();
             }

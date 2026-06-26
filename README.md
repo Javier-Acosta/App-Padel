@@ -1,26 +1,72 @@
 # AppPadel
 
-Este es un proyecto [Next.js](https://nextjs.org) creado con [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+AppPadel es una aplicación web para organizar turnos de pádel en un club. Permite que los jugadores creen una cuenta, consulten disponibilidad, reserven una cancha y paguen una seña online. También incluye un panel administrativo para gestionar canchas, precios, horarios, promociones, bloqueos y estados de reservas.
 
-## Primeros pasos
+Aplicación publicada: [https://187.77.225.53/](https://187.77.225.53/)
 
-Primero, inicia el servidor de desarrollo:
+> Nota de entrega: si el navegador muestra una advertencia de certificado en la URL publicada "La conexión no es privada", tienes que ir a Avanzado, luego Continuar a 187.77.225.53 (no seguro).
 
-```bash
-npm run dev
-# o
-yarn dev
-# o
-pnpm dev
-# o
-bun dev
-```
+## Problema y usuarios
 
-Abre [http://localhost:3000](http://localhost:3000) en el navegador para ver el resultado.
+Muchos clubes o grupos deportivos gestionan turnos por mensajes, planillas o llamados, lo que puede generar cruces de horarios, reservas duplicadas y poca visibilidad para el jugador. AppPadel busca centralizar ese proceso en una experiencia simple.
+
+Usuarios principales:
+
+- Jugador: consulta disponibilidad, arma una reserva y paga la seña.
+- Administrador: configura canchas, horarios, precios, promociones, bloqueos y seguimiento de reservas.
+
+## Funcionalidades
+
+- Registro e inicio de sesión.
+- Vista pública con presentación del club y acceso a reservas.
+- Consulta de disponibilidad por fecha, cancha y horario.
+- Selección de turnos de 1 a 15 horas en bloques de 30 minutos.
+- Creación de reservas pendientes de pago.
+- Integración con Mercado Pago para cobrar la seña.
+- Webhook para actualizar pagos y confirmar reservas.
+- Panel administrativo con agenda diaria, filtros, estados y resumen operativo.
+- Configuración de canchas activas, horarios de apertura, precio base, seña y promociones.
+- Bloqueo de canchas por mantenimiento u otros motivos.
+- Tests end-to-end con Playwright para validar flujos principales.
+
+## Capturas
+
+Las capturas de referencia están en `public/capturas/`:
+
+- Home: `public/capturas/home.png`
+- Login: `public/capturas/login.png`
+- Registro: `public/capturas/register.png`
+
+Las pantallas autenticadas de reservas y panel admin se pueden capturar después de sembrar usuarios de prueba en un PocketBase local o de ingresar manualmente en el despliegue.
+
+## Tecnologías utilizadas
+
+- Next.js 16 con App Router.
+- React 19.
+- TypeScript.
+- Tailwind CSS.
+- PocketBase para autenticación y persistencia.
+- Hostinger como alojamiento web
+- Dokploy como despliegue y la gestión de aplicaciones web y bases de datos
+- Mercado Pago Checkout Pro y webhook de pagos.
+- Playwright para pruebas end-to-end.
+- Codex para la implementación de la App, utilizando inteligencia artificial de OpenAI
+
+## Estructura principal
+
+- `app/page.tsx`: landing pública.
+- `app/login` y `app/register`: autenticación.
+- `app/reservas`: flujo del jugador.
+- `app/admin`: panel administrativo.
+- `app/api`: endpoints de autenticación, disponibilidad, reservas y pagos.
+- `lib/padel`: reglas de negocio de disponibilidad, horarios, precios y datos.
+- `lib/payments`: integración con Mercado Pago.
+- `e2e`: pruebas de interfaz y flujos críticos.
+- `docs/memoria-desarrollo.md`: memoria breve del trabajo final.
 
 ## Variables de entorno
 
-La app necesita credenciales de PocketBase en tiempo de ejecucion. Crea `.env.local` para desarrollo local, o configura estas mismas variables en tu proveedor de hosting de produccion:
+Crear un archivo `.env.local` para desarrollo o configurar estas variables en producción:
 
 ```bash
 POCKETBASE_URL=http://127.0.0.1:8090
@@ -30,56 +76,69 @@ MERCADOPAGO_ACCESS_TOKEN=TEST-...
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-`.env.local` esta ignorado intencionalmente por git, por lo que produccion no lo recibira automaticamente. Agrega las variables en el entorno del servidor o plataforma y reinicia la app Next.js despues de cambiarlas.
-
-Si PocketBase corre en el mismo servidor de produccion que Next.js, `POCKETBASE_URL` normalmente puede quedar como `http://127.0.0.1:8090`. Si PocketBase corre en otro host, usa la URL de ese servidor.
-
-`MERCADOPAGO_ACCESS_TOKEN` se usa del lado servidor para crear preferencias de Checkout Pro y validar notificaciones de pago. `NEXT_PUBLIC_APP_URL` debe ser la URL publica que Mercado Pago puede alcanzar, porque se usa para las URLs de retorno del checkout y para el endpoint de webhook:
+`NEXT_PUBLIC_APP_URL` debe apuntar a la URL pública real para que Mercado Pago pueda redirigir al usuario y llamar al webhook:
 
 ```text
 /api/payments/mercadopago/webhook
 ```
 
-## Horarios y logo del club
+## Instalación y ejecución local
 
-Los superusuarios pueden administrar el horario del club desde el panel de administracion de PocketBase:
-
-1. Abre la coleccion `club_settings`.
-2. Edita el registro `default`.
-3. Actualiza `openingHours` para controlar los horarios disponibles para reservas.
-4. Sube el logo del club en el campo `logo`.
-
-Los horarios predeterminados son de 8:00 a 23:00 todos los dias:
-
-```json
-{
-  "monday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
-  "tuesday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
-  "wednesday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
-  "thursday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
-  "friday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
-  "saturday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] },
-  "sunday": { "ranges": [{ "startsAt": "08:00", "endsAt": "23:00" }] }
-}
+```bash
+npm install
+npm run dev
 ```
 
-Para cerrar un dia, usa `{ "closed": true, "ranges": [] }` en ese dia.
+Luego abrir [http://localhost:3000](http://localhost:3000).
 
-Puedes empezar a editar la pagina modificando `app/page.tsx`. La pagina se actualiza automaticamente mientras editas el archivo.
+Para compilar producción:
 
-Este proyecto usa [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) para optimizar y cargar automaticamente [Geist](https://vercel.com/font), una familia tipografica de Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Mas informacion
+## Datos iniciales
 
-Para aprender mas sobre Next.js, consulta estos recursos:
+El proyecto incluye scripts para sincronizar y sembrar datos de prueba en PocketBase:
 
-- [Documentacion de Next.js](https://nextjs.org/docs) - aprende sobre las funciones y API de Next.js.
-- [Learn Next.js](https://nextjs.org/learn) - un tutorial interactivo de Next.js.
+```bash
+npm run pb:schema
+npm run pb:seed
+npm run pb:seed:users
+```
 
-Tambien puedes revisar el [repositorio de Next.js en GitHub](https://github.com/vercel/next.js); los comentarios y contribuciones son bienvenidos.
+Los usuarios de prueba se usan en los tests e2e:
 
-## Despliegue en Vercel
+- Jugador: `jugador.demo@app-padel.test`
+- Admin: `admin.demo@app-padel.test`
 
-La forma mas sencilla de desplegar tu app Next.js es usar la [plataforma Vercel](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme), de los creadores de Next.js.
+## Pruebas
 
-Consulta la [documentacion de despliegue de Next.js](https://nextjs.org/docs/app/building-your-application/deploying) para mas detalles.
+```bash
+npm run lint
+npm run build
+npm run test:e2e
+```
+
+Durante la revisión se verificó que `npm run lint` y `npm run build` finalizan correctamente.
+
+## Uso de inteligencia artificial
+
+La IA se utilizó como copiloto para:
+
+- Convertir la idea inicial en un MVP de reservas.
+- Definir entidades, estados de reserva y reglas de disponibilidad.
+- Revisar errores de codificación, validaciones y copy de interfaz.
+- Generar documentación de entrega y memoria de desarrollo.
+- Preparar una checklist contra el enunciado del trabajo final.
+
+Las decisiones funcionales finales fueron revisadas manualmente para mantener el alcance viable y centrado en el usuario.
+
+## Mejoras futuras
+
+- Configurar HTTPS con certificado válido en la URL publicada.
+- Agregar notificaciones por email o WhatsApp.
+- Generar reportes mensuales de reservas y recaudación.
+- Permitir edición de reservas desde el jugador.
+- Agregar roles más granulares para empleados del club.

@@ -50,15 +50,15 @@ export default async function ReservationsPage() {
           </p>
           <h1 className="mt-3 text-3xl font-semibold">Hola, {user.name}</h1>
           <p className="mt-3 max-w-2xl text-[#526158]">
-            Elegi fecha, cancha y horario en un flujo simple. La reserva queda
-            pendiente hasta completar la sena online.
+            Elegí fecha, cancha y horario en un flujo simple. La reserva queda
+            pendiente hasta completar la seña online.
           </p>
           {user.role === "admin" ? (
             <Link
               href="/admin"
               className="mt-5 inline-flex h-11 items-center justify-center rounded-md bg-[#164b35] px-5 text-sm font-semibold text-white transition hover:bg-[#0f3827]"
             >
-              Ir al panel de administracion
+              Ir al panel de administración
             </Link>
           ) : null}
         </section>
@@ -66,8 +66,8 @@ export default async function ReservationsPage() {
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           {[
             ["Duraciones", "De 1 a 15 horas"],
-            ["Pago", `Sena online de $${settings?.depositAmount ?? 0}`],
-            ["Seleccion", "Inicio y fin en bloques de 30 minutos"],
+            ["Pago", `Seña online de $${settings?.depositAmount ?? 0}`],
+            ["Selección", "Inicio y fin en bloques de 30 minutos"],
           ].map(([title, value]) => (
             <div
               key={title}

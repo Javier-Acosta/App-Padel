@@ -14,7 +14,7 @@ export default async function RegisterPage() {
   return (
     <AuthShell
       title="Crea tu cuenta de jugador."
-      subtitle="Necesitamos tus datos basicos para asociar reservas y avisos del club."
+      subtitle="Necesitamos tus datos básicos para asociar reservas y avisos del club."
     >
       <AuthForm mode="register" />
     </AuthShell>

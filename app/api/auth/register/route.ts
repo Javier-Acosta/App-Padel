@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof SyntaxError || error instanceof AuthInputError) {
       return NextResponse.json(
-        { error: "Revisa los datos ingresados e intenta nuevamente." },
+        { error: "Revisá los datos ingresados e intentá nuevamente." },
         { status: 400 },
       );
     }

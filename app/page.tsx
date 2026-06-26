@@ -79,10 +79,10 @@ export default async function Home() {
                 Reserva online
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-               Catamarca Turnos y Torneos de Pádel - by Priscila Vega.
+                Catamarca Turnos y Torneos de Pádel - by Priscila Vega.
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-[#dbe8df]">
-                AppPadel centraliza para organizar turnos de padel entre Amigos.
+                AppPadel centraliza la organización de turnos de pádel entre amigos.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
@@ -104,7 +104,7 @@ export default async function Home() {
           <div className="mb-4 grid gap-3 text-sm text-[#dbe8df] sm:grid-cols-3">
             {[
               ["Duraciones", "De 1 a 15 horas"],
-              ["Pago", "Sena online"],
+              ["Pago", "Seña online"],
               ["Horario", "8:00 a 23:00"],
             ].map(([title, value]) => (
               <div

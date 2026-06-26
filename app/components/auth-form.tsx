@@ -68,7 +68,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             />
           </label>
           <label className="grid gap-1.5 text-sm font-medium text-[#26382f]">
-            Telefono
+            Teléfono
             <input
               name="phone"
               type="tel"
@@ -122,7 +122,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       </button>
 
       <p className="text-center text-sm text-[#526158]">
-        {isRegister ? "Ya tenes cuenta?" : "Todavia no tenes cuenta?"}{" "}
+        {isRegister ? "¿Ya tenés cuenta?" : "¿Todavía no tenés cuenta?"}{" "}
         <Link
           href={isRegister ? "/login" : "/register"}
           className="font-semibold text-[#164b35] hover:underline"

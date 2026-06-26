@@ -45,10 +45,10 @@ import {
 const dayLabels = [
   ["monday", "Lunes"],
   ["tuesday", "Martes"],
-  ["wednesday", "Miercoles"],
+  ["wednesday", "Miércoles"],
   ["thursday", "Jueves"],
   ["friday", "Viernes"],
-  ["saturday", "Sabado"],
+  ["saturday", "Sábado"],
   ["sunday", "Domingo"],
 ] as const;
 
@@ -270,7 +270,7 @@ function PromotionForm({ promotion }: { promotion?: Promotion }) {
 
       <div className="grid gap-3 lg:grid-cols-[1fr_140px_140px_140px_140px]">
         <div>
-          <p className="text-sm font-medium text-[#26382f]">Dias</p>
+          <p className="text-sm font-medium text-[#26382f]">Días</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {promotionDayLabels.map(([value, label]) => (
               <label
@@ -316,7 +316,7 @@ function PromotionForm({ promotion }: { promotion?: Promotion }) {
             className={textInputClassName()}
           />
         </Field>
-        <Field label="Sena promo">
+        <Field label="Seña promo">
           <input
             type="number"
             name="depositOverride"
@@ -328,7 +328,7 @@ function PromotionForm({ promotion }: { promotion?: Promotion }) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <SubmitButton>{promotion ? "Guardar promocion" : "Crear promocion"}</SubmitButton>
+        <SubmitButton>{promotion ? "Guardar promoción" : "Crear promoción"}</SubmitButton>
         {promotion ? (
           <button
             formAction={deletePromotionAction}
@@ -445,7 +445,7 @@ export default async function AdminPage({
       ),
     },
     {
-      label: "Senas cobradas",
+      label: "Señas cobradas",
       value: formatCurrency(
         payableReservationsForSelectedDate.reduce(
           (total, reservation) => total + reservation.depositAmount,
@@ -454,7 +454,7 @@ export default async function AdminPage({
       ),
     },
     {
-      label: "Senas pendientes",
+      label: "Señas pendientes",
       value: formatCurrency(
         pendingPaymentReservationsForSelectedDate.reduce(
           (total, reservation) => total + reservation.depositAmount,
@@ -474,7 +474,7 @@ export default async function AdminPage({
   }));
   const blockStats = [
     {
-      label: "Bloqueos del dia",
+      label: "Bloqueos del día",
       value: blocksForSelectedDate.length,
     },
     {
@@ -482,7 +482,7 @@ export default async function AdminPage({
       value: new Set(blocksForSelectedDate.map((block) => block.courtId)).size,
     },
     {
-      label: "Proximos bloqueos",
+      label: "Próximos bloqueos",
       value: blocks.length,
     },
   ];
@@ -507,11 +507,11 @@ export default async function AdminPage({
 
         <section className="mt-10">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7b3f28]">
-            Administracion
+            Administración
           </p>
           <h1 className="mt-3 text-3xl font-semibold">Panel del club</h1>
           <p className="mt-3 max-w-2xl text-[#526158]">
-            Gestiona canchas, horarios generales, precios, senas y bloqueos de
+            Gestioná canchas, horarios generales, precios, señas y bloqueos de
             disponibilidad.
           </p>
         </section>
@@ -521,7 +521,7 @@ export default async function AdminPage({
             ["Canchas", courts.length],
             ["Activas", courts.filter((court) => court.active).length],
             ["Precio/hora", formatCurrency(settings.basePrice)],
-            ["Sena", formatCurrency(settings.depositAmount)],
+            ["Seña", formatCurrency(settings.depositAmount)],
           ].map(([title, value]) => (
             <div
               key={title}
@@ -539,13 +539,13 @@ export default async function AdminPage({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7b3f28]">
-                Operacion
+                Operación
               </p>
               <h2 className="mt-2 text-xl font-semibold text-[#26382f]">
-                Agenda del dia
+                Agenda del día
               </h2>
               <p className="mt-1 text-sm text-[#526158]">
-                Vista rapida de turnos, pagos pendientes y asistencia.
+                Vista rápida de turnos, pagos pendientes y asistencia.
               </p>
             </div>
             <div className="grid gap-3">
@@ -579,7 +579,7 @@ export default async function AdminPage({
                   />
                 </Field>
                 <div className="self-end">
-                  <SubmitButton>Ver dia</SubmitButton>
+                  <SubmitButton>Ver día</SubmitButton>
                 </div>
               </form>
             </div>
@@ -663,7 +663,7 @@ export default async function AdminPage({
                                   Total {formatCurrency(reservation.totalPrice)}
                                 </span>
                                 <span className="rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-[#526158]">
-                                  Sena{" "}
+                                  Seña{" "}
                                   {formatCurrency(reservation.depositAmount)}
                                 </span>
                               </div>
@@ -769,7 +769,7 @@ export default async function AdminPage({
                     className={textInputClassName()}
                   />
                 </Field>
-                <Field label="Sena">
+                <Field label="Seña">
                   <input
                     type="number"
                     name="depositAmount"
@@ -787,7 +787,7 @@ export default async function AdminPage({
                     className={textInputClassName()}
                   />
                 </Field>
-                <Field label="Horas limite cancelacion">
+                <Field label="Horas límite cancelación">
                   <input
                     type="number"
                     name="cancellationCutoffHours"
@@ -800,7 +800,7 @@ export default async function AdminPage({
 
               <div className="grid gap-2">
                 <p className="text-sm font-semibold text-[#26382f]">
-                  Horarios por dia
+                  Horarios por día
                 </p>
                 {dayLabels.map(([dayKey, label]) => {
                   const day = settings.openingHours[dayKey];
@@ -843,7 +843,7 @@ export default async function AdminPage({
                 })}
               </div>
 
-              <SubmitButton>Guardar configuracion</SubmitButton>
+              <SubmitButton>Guardar configuración</SubmitButton>
             </form>
           </div>
         </section>
@@ -858,7 +858,7 @@ export default async function AdminPage({
                 Promociones
               </h2>
               <p className="mt-1 text-sm text-[#526158]">
-                Define precios o senas especiales por fecha, dia y horario.
+                Definí precios o señas especiales por fecha, día y horario.
               </p>
             </div>
             <div className="rounded-md bg-[#f6f7f4] px-4 py-3 text-sm text-[#526158]">
@@ -902,7 +902,7 @@ export default async function AdminPage({
                       ) : null}
                       {promotion.depositOverride !== undefined ? (
                         <span className="rounded-md bg-white px-3 py-2 font-semibold text-[#26382f]">
-                          Sena: {formatCurrency(promotion.depositOverride)}
+                          Seña: {formatCurrency(promotion.depositOverride)}
                         </span>
                       ) : null}
                       {promotion.timeRange ? (
@@ -930,10 +930,10 @@ export default async function AdminPage({
 
         <section className="mt-6 rounded-lg border border-[#d9ded5] bg-white p-5 shadow-sm">
           <h2 className="text-xl font-semibold text-[#26382f]">
-            Reservas proximas
+            Reservas próximas
           </h2>
           <p className="mt-1 text-sm text-[#526158]">
-            Controla pagos, cancelaciones y asistencia desde el panel.
+            Controlá pagos, cancelaciones y asistencia desde el panel.
           </p>
 
           <form
@@ -1009,7 +1009,7 @@ export default async function AdminPage({
                         </p>
                         <p className="mt-2 text-sm font-semibold text-[#26382f]">
                           {formatCurrency(reservation.totalPrice)} total -{" "}
-                          {formatCurrency(reservation.depositAmount)} sena
+                          {formatCurrency(reservation.depositAmount)} seña
                         </p>
                         <div className="mt-3 grid gap-1 text-sm text-[#526158]">
                           <p className="font-semibold text-[#26382f]">
@@ -1043,7 +1043,7 @@ export default async function AdminPage({
               })
             ) : (
               <p className="rounded-md bg-[#f6f7f4] p-4 text-sm text-[#526158]">
-                No hay reservas proximas.
+                No hay reservas próximas.
               </p>
             )}
           </div>
@@ -1253,7 +1253,7 @@ export default async function AdminPage({
               ))
             ) : (
               <p className="rounded-md bg-[#f6f7f4] p-4 text-sm text-[#526158]">
-                No hay bloqueos proximos.
+                No hay bloqueos próximos.
               </p>
             )}
           </div>

@@ -291,7 +291,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
 
       if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
         setError(
-          "Elegi un rango de al menos 1 hora en bloques de 30 minutos disponibles.",
+          "Elegí un rango de al menos 1 hora en bloques de 30 minutos disponibles.",
         );
         setSelectedRange({
           courtId: court.id,
@@ -322,7 +322,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
 
     if (!isRangeAvailable(courtSlots, startsAt, endsAt)) {
       setError(
-        "Elegi un rango de al menos 1 hora en bloques de 30 minutos disponibles.",
+        "Elegí un rango de al menos 1 hora en bloques de 30 minutos disponibles.",
       );
       setSelectedRange({
         courtId: court.id,
@@ -369,7 +369,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
       }
 
       setReservationNotice(
-        `Reserva pendiente creada. Tenes ${settings?.paymentHoldMinutes ?? 10} minutos para pagar la sena.`,
+        `Reserva pendiente creada. Tenés ${settings?.paymentHoldMinutes ?? 10} minutos para pagar la seña.`,
       );
       setSlots((currentSlots) =>
         currentSlots.filter(
@@ -441,7 +441,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
                     {index === 0
                       ? "Hoy"
                       : index === 1
-                        ? "Manana"
+                        ? "Mañana"
                         : item.weekday}
                   </span>
                   <span className="mt-1 block font-semibold">{item.day}</span>
@@ -454,12 +454,12 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
             {[
               ["Cancha", selectedRange?.courtName ?? "Sin seleccionar"],
               ["Horario", selectedTimeLabel],
-              ["Duracion", formatDuration(durationMinutes)],
+              ["Duración", formatDuration(durationMinutes)],
               [
                 "Total",
                 hasCompleteSelection ? formatCurrency(estimatedPrice) : "Pendiente",
               ],
-              ["Sena", formatCurrency(settings?.depositAmount ?? 0)],
+              ["Seña", formatCurrency(settings?.depositAmount ?? 0)],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between gap-3">
                 <span>{label}</span>
@@ -476,11 +476,11 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
             disabled={!hasCompleteSelection || isCreating}
             className="h-11 rounded-md bg-[#164b35] px-4 text-sm font-semibold text-white transition hover:bg-[#0f3827] disabled:cursor-not-allowed disabled:bg-[#9aa9a0]"
           >
-            {isCreating ? "Creando reserva..." : "Reservar con sena"}
+            {isCreating ? "Creando reserva..." : "Reservar con seña"}
           </button>
 
           <p className="text-sm leading-6 text-[#526158]">
-            Toca una hora de inicio y despues la hora de fin en la misma cancha.
+            Tocá una hora de inicio y después la hora de fin en la misma cancha.
           </p>
         </div>
       </aside>
@@ -496,7 +496,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
             </h2>
           </div>
           <span className="w-fit rounded-md bg-[#edf4ef] px-3 py-2 text-sm font-semibold text-[#164b35]">
-            Sena: {formatCurrency(settings?.depositAmount ?? 0)}
+            Seña: {formatCurrency(settings?.depositAmount ?? 0)}
           </span>
         </div>
 
@@ -596,7 +596,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
           <div className="mt-5 rounded-md border border-[#cfe3d8] bg-[#f4fbf7] p-4 text-sm text-[#164b35]">
             <p className="font-semibold">
               {hasCompleteSelection
-                ? "Paso 3: confirma la sena"
+                ? "Paso 3: confirmá la seña"
                 : "Falta elegir la hora de fin"}
             </p>
             <p className="mt-1 text-[#35624c]">
