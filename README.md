@@ -22,8 +22,6 @@ Usuarios principales:
 - Consulta de disponibilidad por fecha, cancha y horario.
 - Selección de turnos de 1 a 15 horas en bloques de 30 minutos.
 - Creación de reservas pendientes de pago.
-- Integración con Mercado Pago para cobrar la seña.
-- Webhook para actualizar pagos y confirmar reservas.
 - Panel administrativo con agenda diaria, filtros, estados y resumen operativo.
 - Configuración de canchas activas, horarios de apertura, precio base, seña y promociones.
 - Bloqueo de canchas por mantenimiento u otros motivos.
@@ -138,6 +136,8 @@ Las decisiones funcionales finales fueron revisadas manualmente para mantener el
 ## Mejoras futuras
 
 - Configurar HTTPS con certificado válido en la URL publicada.
+- Integración con Mercado Pago para cobrar la seña.
+- Webhook para actualizar pagos y confirmar reservas.
 - Agregar notificaciones por email o WhatsApp.
 - Generar reportes mensuales de reservas y recaudación.
 - Permitir edición de reservas desde el jugador.

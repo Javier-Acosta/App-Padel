@@ -76,10 +76,10 @@ export default async function Home() {
           <div className="flex flex-1 items-center py-16">
             <div className="max-w-2xl">
               <p className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-[#f6c46b]">
-                Reserva online
+                catamarca
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                Catamarca Turnos y Torneos de Pádel - by Priscila Vega.
+                Reservá Turnos de Pádel  Club Indian
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-[#dbe8df]">
                 AppPadel centraliza la organización de turnos de pádel entre amigos.
@@ -103,7 +103,7 @@ export default async function Home() {
 
           <div className="mb-4 grid gap-3 text-sm text-[#dbe8df] sm:grid-cols-3">
             {[
-              ["Duraciones", "De 1 a 15 horas"],
+              ["Precio", "$50.000 la hora"],
               ["Pago", "Seña online"],
               ["Horario", "8:00 a 23:00"],
             ].map(([title, value]) => (
