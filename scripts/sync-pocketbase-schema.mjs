@@ -273,11 +273,23 @@ async function upsertCollection(token, definition) {
 
   const mergedFields = mergeByName(existing.fields ?? [], definition.fields ?? []);
   const mergedIndexes = mergeIndexes(existing.indexes ?? [], definition.indexes ?? []);
+  const ruleKeys = [
+    "listRule",
+    "viewRule",
+    "createRule",
+    "updateRule",
+    "deleteRule",
+    "authRule",
+  ];
+  const changedRules = ruleKeys.filter(
+    (key) => definition[key] !== undefined && existing[key] !== definition[key],
+  );
 
   if (
     mergedFields.missing.length === 0 &&
     mergedFields.changed.length === 0 &&
-    mergedIndexes.missing.length === 0
+    mergedIndexes.missing.length === 0 &&
+    changedRules.length === 0
   ) {
     console.log(`ok ${definition.name}`);
     return existing;
@@ -299,7 +311,7 @@ async function upsertCollection(token, definition) {
     .join(", ");
   const indexCount = mergedIndexes.missing.length;
   console.log(
-    `updated ${definition.name}${fieldNames ? ` fields=[${fieldNames}]` : ""}${changedFieldNames ? ` changed=[${changedFieldNames}]` : ""}${indexCount ? ` indexes=${indexCount}` : ""}`,
+    `updated ${definition.name}${fieldNames ? ` fields=[${fieldNames}]` : ""}${changedFieldNames ? ` changed=[${changedFieldNames}]` : ""}${indexCount ? ` indexes=${indexCount}` : ""}${changedRules.length ? ` rules=[${changedRules.join(", ")}]` : ""}`,
   );
 
   return getCollection(token, definition.name);
@@ -307,7 +319,7 @@ async function upsertCollection(token, definition) {
 
 function buildDefinitions(ids = {}) {
   const authedOnly = '@request.auth.id != ""';
-  const adminOnly = '@request.auth.role = "admin"';
+  const adminOnly = '@request.auth.id = "gh07go6mdt3ehaq"';
   const ownerOrAdmin = `${adminOnly} || userId = @request.auth.id`;
 
   return [

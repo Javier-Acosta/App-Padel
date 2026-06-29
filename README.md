@@ -109,7 +109,17 @@ npm run pb:seed:users
 Los usuarios de prueba se usan en los tests e2e:
 
 - Jugador: `jugador.demo@app-padel.test`
+- Clave: AppPadel123!
+
 - Admin: `admin.demo@app-padel.test`
+- Clave: AppPadel123!
+
+## Pueden usar Tarjetas de créditos de Pruebas 
+
+Tarjeta	Número :      5031 7557 3453 0604
+Código de seguridad : 123
+Fecha de caducidad :  11/30
+
 
 ## Pruebas
 

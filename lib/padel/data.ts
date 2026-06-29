@@ -699,7 +699,6 @@ export async function getPaymentForReservation(
         page: 1,
         perPage: 1,
         filter: `reservationId = "${reservationId}"`,
-        sort: "-created",
       },
     },
   );

@@ -33,6 +33,13 @@ type SelectedRange = {
   endsAt?: string;
 };
 
+type CreateReservationResponse = {
+  error?: string;
+  payment?: {
+    checkoutUrl?: string;
+  };
+};
+
 const HALF_HOUR_MS = 30 * 60 * 1000;
 
 function formatCurrency(value: number) {
@@ -362,14 +369,18 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
           durationMinutes,
         }),
       });
-      const data = await response.json();
+      const data = (await response.json()) as CreateReservationResponse;
 
       if (!response.ok) {
         throw new Error(data.error ?? "No pudimos crear la reserva.");
       }
 
+      if (!data.payment?.checkoutUrl) {
+        throw new Error("No pudimos generar el link de pago.");
+      }
+
       setReservationNotice(
-        `Reserva pendiente creada. Tenés ${settings?.paymentHoldMinutes ?? 10} minutos para pagar la seña.`,
+        "Reserva pendiente creada. Te llevamos a Mercado Pago para pagar la seña.",
       );
       setSlots((currentSlots) =>
         currentSlots.filter(
@@ -382,6 +393,7 @@ export function ReservationPicker({ courts, settings }: ReservationPickerProps) 
         ),
       );
       setSelectedRange(null);
+      window.location.assign(data.payment.checkoutUrl);
     } catch (createError) {
       setError(
         createError instanceof Error

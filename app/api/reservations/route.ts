@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getAuthToken, getCurrentUser } from "@/lib/auth/session";
 import { assertTurnDuration } from "@/lib/domain/reservations";
+import { authenticatePocketBaseAdmin } from "@/lib/pocketbase/client";
 import {
   calculateAvailability,
   getDateRange,
@@ -9,12 +10,14 @@ import {
 } from "@/lib/padel/availability";
 import {
   createPendingReservation,
+  createPayment,
   getActiveCourts,
   getActivePromotionsForRange,
   getClubSettings,
   getCourtBlocksForRange,
   getReservationsForDate,
 } from "@/lib/padel/data";
+import { createReservationDepositPreference } from "@/lib/payments/mercadopago";
 import { calculateReservationPrice } from "@/lib/padel/pricing";
 
 function parseReservationDate(value: unknown) {
@@ -119,8 +122,35 @@ export async function POST(request: Request) {
         Date.now() + settings.paymentHoldMinutes * 60 * 1000,
       ).toISOString(),
     });
+    const paymentPreference = await createReservationDepositPreference({
+      reservation,
+      user,
+    });
 
-    return NextResponse.json({ reservation }, { status: 201 });
+    if (!paymentPreference.checkoutUrl) {
+      throw new Error("Mercado Pago did not return a checkout URL.");
+    }
+
+    const adminAuth = await authenticatePocketBaseAdmin();
+
+    await createPayment(adminAuth.token, {
+      reservationId: reservation.id,
+      providerPreferenceId: paymentPreference.id,
+      status: "pending",
+      amount: reservation.depositAmount,
+    });
+
+    return NextResponse.json(
+      {
+        reservation,
+        payment: {
+          provider: "mercadopago",
+          preferenceId: paymentPreference.id,
+          checkoutUrl: paymentPreference.checkoutUrl,
+        },
+      },
+      { status: 201 },
+    );
   } catch (error) {
     return NextResponse.json(
       {
